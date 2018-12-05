@@ -1,0 +1,11 @@
+{
+  "name": "tb-phototag-lib",
+  "version": "0.0.1",
+  "peerDependencies": {
+    "@angular/common": "^6.x",
+    "@angular/core": "^6.x",
+    "@angular/material": "^6.x",
+    "@angular/cdk": "^6.x",
+    "angular-tree-component": "^8.0"
+  }
+}

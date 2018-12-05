@@ -1,0 +1,34 @@
+.mat-icon-inside-tree {
+  font-size: 18px;
+  &.action {
+    color: #7D7D7D;
+    margin-left: 10px;
+  }
+}
+
+/* Doesn't work ... ??? */
+.node-content-wrapper {
+  width: 100%;
+  font-size: 18px;
+}
+
+.inline {
+  width: 100%;
+  display: inline-flex;
+}
+
+.spacer {
+  flex: 10;
+  border-bottom: 1px dashed lightgray;
+  height: 9px;
+  margin-left: 5px;
+}
+
+.forms {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-around;
+  .form-field {
+    padding-left: 10px;
+  }
+}

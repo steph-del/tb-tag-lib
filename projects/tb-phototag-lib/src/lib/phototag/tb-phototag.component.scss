@@ -1,0 +1,9 @@
+.photo-tag-container {
+  text-align: center;
+  .mat-chip-list-wrapper {
+    display: block !important;
+  }
+  .tagsTree {
+    max-width: 600px;
+  }
+}

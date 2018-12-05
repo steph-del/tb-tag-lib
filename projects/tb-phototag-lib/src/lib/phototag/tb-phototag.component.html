@@ -1,0 +1,35 @@
+<div class="photo-tag-container">
+  <p><b>Tags classiques</b></p>
+  <mat-chip-list>
+    <mat-chip
+      *ngFor= "let tag of basicTags"
+      color="primary"
+      [selected]="!basicTagAlreadyUsed(tag)"
+      [disabled]="basicTagAlreadyUsed(tag)"
+      (click)="emitTag(tag)">
+      {{ tag.name }}
+    </mat-chip>
+  </mat-chip-list>
+
+  <p><b>Mes tags</b></p>
+  <mat-chip-list class="basic-tags-chip-list">
+    <mat-chip
+      *ngFor= "let tag of userTags"
+      color="accent"
+      [selected]="!userTagAlreadyUsed(tag)"
+      [disabled]="userTagAlreadyUsed(tag)"
+      (click)="emitTag(tag)">
+      {{ tag.name }}
+    </mat-chip>
+  </mat-chip-list>
+  <p *ngIf="userTags.length == 0">Vous n'avez aucun tag personnalisé pour l'instant</p>
+
+  <br />
+  <button mat-raised-button (click)="toggleTree()">Gérer mes tags</button>
+
+  <div class="tagsTree" *ngIf="showTree">
+    <tb-phototag-tree
+      (tagsHasChanged)="getTags(userId)"
+      (log)="_log($event)"></tb-phototag-tree>
+  </div>
+</div>
