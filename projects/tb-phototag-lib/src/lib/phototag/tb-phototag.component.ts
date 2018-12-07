@@ -2,7 +2,6 @@ import { Component, OnInit, Input, Output, EventEmitter, ViewChild, ElementRef }
 import { FormBuilder, FormGroup } from '@angular/forms';
 
 import { Observable } from 'rxjs';
-import { map, startWith } from 'rxjs/operators';
 
 import { TbLog } from '../_models/tb-log.model';
 import { PhotoTag } from '../_models/phototag.model';
