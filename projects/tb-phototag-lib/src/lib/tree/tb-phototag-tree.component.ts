@@ -20,6 +20,7 @@ export class TbPhototagTreeLibComponent implements OnInit {
   //
   // INPUT / OUTPUT
   //
+  @Input() photoId: number;
   @Output() log = new EventEmitter<TbLog>();
   @Output() tagsHasChanged = new EventEmitter<boolean>();
 
@@ -70,7 +71,7 @@ export class TbPhototagTreeLibComponent implements OnInit {
       // update movedNode path
       const newPath = movedInto.path === '' ? movedInto.name : movedInto.path + ' / ' + movedInto.name;
       // update node
-      this.phototagService.updateTag({id: movedNode.id, userId: this.userId, name: movedNode.name, path: newPath})
+      this.phototagService.updateTag({id: movedNode.id, userId: this.userId, name: movedNode.name, path: newPath, photoId: this.photoId})
       .subscribe(result => {
         this.log.emit({module: 'tb-phototag-lib', type: 'info', message_fr: `Le tag ${movedNode.name} a bien été déplacé et enregistré`});
       }, error => {
@@ -107,7 +108,7 @@ export class TbPhototagTreeLibComponent implements OnInit {
       node.data.name = newName;
     } else if (node.data.isLeaf) {
       // update tag
-      const tag: PhotoTag = {id: node.data.id, userId: node.data.userId, path: node.data.path, name: newName};
+      const tag: PhotoTag = {id: node.data.id, userId: node.data.userId, path: node.data.path, name: newName, photoId: this.photoId};
       this.phototagService.updateTag(tag).subscribe(resultTag => {
         this.log.emit({module: 'tb-phototag-lib', type: 'info', message_fr: `Le tag ${tag.name} a bien été enregistré`});
         node.data.name = newName;
@@ -130,7 +131,7 @@ export class TbPhototagTreeLibComponent implements OnInit {
       return;
     }
 
-    const tag: PhotoTag = {id: node.data.id, userId: node.data.userId, name: node.data.name, path: node.data.path};
+    const tag: PhotoTag = {id: node.data.id, userId: node.data.userId, name: node.data.name, path: node.data.path, photoId: this.photoId};
     // delete photo tag...
     this.phototagService.removeTag(tag).subscribe(success => {
       // and then, remove node from tree
@@ -167,7 +168,7 @@ export class TbPhototagTreeLibComponent implements OnInit {
   */
   newTag(event: any) {
     const name = event.target.value;
-    this.phototagService.createTag(name, 'Mes tags', this.userId).subscribe(tag => {
+    this.phototagService.createTag(name, 'Mes tags', this.userId, this.photoId).subscribe(tag => {
       this.treeService.growTree(tag.path, this.tree);
       this.treeService.placeTag(tag, this.tree);
       this.treeComponent.treeModel.update();

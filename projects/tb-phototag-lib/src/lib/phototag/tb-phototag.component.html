@@ -29,6 +29,7 @@
 
   <div class="tagsTree" *ngIf="showTree">
     <tb-phototag-tree
+      [photoId]="photoId"
       (tagsHasChanged)="getTags(userId)"
       (log)="_log($event)"></tb-phototag-tree>
   </div>

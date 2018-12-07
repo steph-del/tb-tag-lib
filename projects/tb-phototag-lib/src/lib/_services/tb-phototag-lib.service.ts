@@ -8,20 +8,20 @@ import { PhotoTag } from '../_models/phototag.model';
 export class TbPhototagLibService {
 
   fakeUserTags: Array<PhotoTag> = [
-    {path: 'Mes tags / Identiplante', name: 'Plantule', id: 5, userId: 123},
-    {path: 'Mes tags / Identiplante', name: 'Rosette', id: 6, userId: 123},
-    {path: 'Mes tags / Identiplante / Sauvage', name: 'Vert clair', id: 7, userId: 123},
-    {path: 'Mes tags / Identiplante / Sauvage', name: 'Vert foncé', id: 8, userId: 123}
+    {path: 'Mes tags / Identiplante', name: 'Plantule', id: 5, userId: 123, photoId: 456},
+    {path: 'Mes tags / Identiplante', name: 'Rosette', id: 6, userId: 123, photoId: 456},
+    {path: 'Mes tags / Identiplante / Sauvage', name: 'Vert clair', id: 7, userId: 123, photoId: 456},
+    {path: 'Mes tags / Identiplante / Sauvage', name: 'Vert foncé', id: 8, userId: 123, photoId: 456}
   ];
 
   constructor() { }
 
   getBasicTags(): Observable<Array<PhotoTag>> {
     const tags = [
-      {path: 'Plante', name: 'Feuille', id: 1, userId: null},
-      {path: 'Plante', name: 'Tige', id: 2, userId: null},
-      {path: 'Plante', name: 'Fleur', id: 3, userId: null},
-      {path: 'Plante', name: 'Ecorce', id: 4, userId: null}
+      {path: 'Plante', name: 'Feuille', id: 1, userId: null, photoId: 456},
+      {path: 'Plante', name: 'Tige', id: 2, userId: null, photoId: 456},
+      {path: 'Plante', name: 'Fleur', id: 3, userId: null, photoId: 456},
+      {path: 'Plante', name: 'Ecorce', id: 4, userId: null, photoId: 456}
     ];
     return of(tags);
   }
@@ -69,11 +69,11 @@ export class TbPhototagLibService {
     });
   }
 
-  createTag(name, path, userId): Observable<PhotoTag> {
+  createTag(name, path, userId, photoId): Observable<PhotoTag> {
     // Call API
     // Next line for dev only / When API will be connected, user's tag will be correcly retrieved from server
     const id = Math.floor(Math.random() * 10000 + 100);
-    this.fakeUserTags.push({id: id, userId: userId, name: name, path: path});
-    return of({id: id, userId: userId, name: name, path: path});
+    this.fakeUserTags.push({id: id, userId: userId, name: name, path: path, photoId: photoId});
+    return of({id: id, userId: userId, name: name, path: path, photoId: photoId});
   }
 }
