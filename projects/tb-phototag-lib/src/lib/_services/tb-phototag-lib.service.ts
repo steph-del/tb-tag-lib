@@ -7,18 +7,11 @@ import { PhotoTag } from '../_models/phototag.model';
 })
 export class TbPhototagLibService {
 
-  _fakeUserTags: Array<PhotoTag> = [
-    {path: 'Mes tags / Identiplante', name: 'I_1', id: 5, userId: 123},
-    {path: 'Mes tags / Identiplante', name: 'I_2', id: 6, userId: 123},
-    {path: 'Mes tags / Sauvage', name: 'S_1', id: 7, userId: 123},
-    {path: 'Mes tags / Sauvage', name: 'S_2', id: 8, userId: 123},
-  ];
-
   fakeUserTags: Array<PhotoTag> = [
-    {path: 'Mes tags / Identiplante', name: 'I_1', id: 5, userId: 123},
-    {path: 'Mes tags / Identiplante', name: 'I_2', id: 6, userId: 123},
-    {path: 'Mes tags / Identiplante / Sauvage', name: 'S_1', id: 7, userId: 123},
-    {path: 'Mes tags / Identiplante / Sauvage', name: 'S_2', id: 8, userId: 123}
+    {path: 'Mes tags / Identiplante', name: 'Plantule', id: 5, userId: 123},
+    {path: 'Mes tags / Identiplante', name: 'Rosette', id: 6, userId: 123},
+    {path: 'Mes tags / Identiplante / Sauvage', name: 'Vert clair', id: 7, userId: 123},
+    {path: 'Mes tags / Identiplante / Sauvage', name: 'Vert foncé', id: 8, userId: 123}
   ];
 
   constructor() { }

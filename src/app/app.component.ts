@@ -7,6 +7,11 @@ import { TbLog } from 'projects/tb-phototag-lib/src/lib/_models/tb-log.model';
   styleUrls: ['./app.component.css']
 })
 export class AppComponent {
+  photoTags = [
+    {path: 'Plante', name: 'Feuille', id: 1, userId: null},
+    {path: 'Mes tags / Identiplante', name: 'Rosette', id: 6, userId: 123}
+  ];
+
   log(log: TbLog) {
     if (log.type === 'info') {
       // tslint:disable-next-line:no-console
