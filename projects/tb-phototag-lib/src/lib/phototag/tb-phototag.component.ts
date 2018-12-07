@@ -90,6 +90,7 @@ export class TbPhototagComponent implements OnInit {
   emitTag(tag: PhotoTag): void {
     if (!this.basicTagAlreadyUsed(tag) || !this.userTagAlreadyUsed(tag)) {
       this.tags.emit(tag);
+      this.log.emit({module: 'tb-phototag-lib', type: 'success', message_fr: `Le tag "${tag.name}" est ajouté à votre photo`});
     }
   }
 
