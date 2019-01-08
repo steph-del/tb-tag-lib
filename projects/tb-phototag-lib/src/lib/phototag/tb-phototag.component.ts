@@ -24,7 +24,7 @@ export class TbPhototagComponent implements OnInit {
   @Input() photoTags: Array<PhotoTag> = [];
 
   @Output() log = new EventEmitter<TbLog>();
-  @Output() tags = new EventEmitter<PhotoTag>();
+  @Output() newTag = new EventEmitter<PhotoTag>();
 
   form: FormGroup;
   basicTags: Array<PhotoTag> = [];
@@ -86,9 +86,9 @@ export class TbPhototagComponent implements OnInit {
   /**
    * When user select a tag, emit it
    */
-  emitTag(tag: PhotoTag): void {
+  addTag(tag: PhotoTag): void {
     if (!this.basicTagAlreadyUsed(tag) || !this.userTagAlreadyUsed(tag)) {
-      this.tags.emit(tag);
+      this.newTag.emit(tag);
       this.log.emit({module: 'tb-phototag-lib', type: 'success', message_fr: `Le tag "${tag.name}" est ajouté à votre photo`});
     }
   }
