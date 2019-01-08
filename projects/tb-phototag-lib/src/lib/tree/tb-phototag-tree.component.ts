@@ -209,4 +209,13 @@ export class TbPhototagTreeLibComponent implements OnInit {
     });
   }
 
+  onInitialized(tree: TreeComponent) {
+    // Expand nodes
+    tree.treeModel.expandAll();
+  }
+
+  switchExpandedNode(node: TreeNode): void {
+    node.isExpanded ? node.collapse() : node.expand();
+  }
+
 }

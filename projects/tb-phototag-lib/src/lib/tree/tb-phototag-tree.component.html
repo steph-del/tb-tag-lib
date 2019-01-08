@@ -21,7 +21,8 @@
 #treeComponent
 [nodes]="tree"
 [options]="options"
-(moveNode)="moveNode($event)">
+(moveNode)="moveNode($event)"
+(initialized)="onInitialized(treeComponent)">
   <ng-template #treeNodeFullTemplate
           let-node
           let-index="index"
@@ -43,12 +44,13 @@
 
       <tree-node-wrapper [node]="node" [index]="index" [templates]="templates">
         <ng-template #treeNodeTemplate let-node let-index="index">
-          <div class="inline" *ngIf="!node.data.isEditable">
+          <div class="inline" *ngIf="!node.data.isEditable" (click)="switchExpandedNode(node)">
             <mat-icon class="mat-icon-inside-tree" *ngIf="node.data.isLeaf">local_offer</mat-icon>
             <mat-icon class="mat-icon-inside-tree" *ngIf="node.data.isFolder">folder_open</mat-icon>
             <span>{{ node.data.name }}</span>
           </div>
-          <div class="inline" *ngIf="node.data.isEditable && node.data.isEditing ===  false">
+          
+          <div class="inline" *ngIf="node.data.isEditable && node.data.isEditing ===  false" (click)="switchExpandedNode(node)">
             <mat-icon class="mat-icon-inside-tree" *ngIf="node.data.isLeaf">local_offer</mat-icon>
             <mat-icon class="mat-icon-inside-tree" *ngIf="node.data.isFolder">folder_open</mat-icon>
             <span>{{ node.data.name }}</span>
@@ -57,7 +59,7 @@
             <mat-icon class="mat-icon-inside-tree action" (click)="deleteTag(node)">delete</mat-icon>
           </div>
           
-          <div class="inline" *ngIf="node.data.isEditable && node.data.isEditing ===  true">
+          <div class="inline" *ngIf="node.data.isEditable && node.data.isEditing ===  true" (click)="switchExpandedNode(node)">
             <mat-icon class="mat-icon-inside-tree" *ngIf="node.data.isLeaf">local_offer</mat-icon>
             <mat-icon class="mat-icon-inside-tree" *ngIf="node.data.isFolder">folder_open</mat-icon>
             <input #i [value]="node.data.name" />
