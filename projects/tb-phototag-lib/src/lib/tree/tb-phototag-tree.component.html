@@ -1,20 +1,33 @@
 <div class="forms">
-  <mat-form-field class="form-field">
-    <input
-      matInput
-      placeholder="Créer un tag"
-      class="tagInput"
-      [formControl]="form.controls.tagInput"
-      (keydown.enter)="newTag($event)">
-  </mat-form-field>
-  <mat-form-field class="form-field">
-    <input
-      matInput
-      placeholder="Créer un dossier"
-      class="tagInput"
-      [formControl]="form.controls.folderInput"
-      (keydown.enter)="newFolder($event)">
-  </mat-form-field>
+  <div>
+    <mat-form-field class="form-field">
+      <input
+        #inputTag
+        matInput
+        placeholder="Créer un tag"
+        class="tagInput"
+        [formControl]="form.controls.tagInput"
+        (keydown.enter)="newTag($event)">
+    </mat-form-field>
+    <button mat-icon-button (click)="newTag(inputTag.value)">
+      <mat-icon aria-label="Créer un tag">check</mat-icon>
+    </button>
+  </div>
+
+  <div>
+    <mat-form-field class="form-field">
+      <input
+        #inputFolder
+        matInput
+        placeholder="Créer un dossier"
+        class="tagInput"
+        [formControl]="form.controls.folderInput"
+        (keydown.enter)="newFolder($event)">
+    </mat-form-field>
+    <button mat-icon-button (click)="newFolder(inputFolder.value)">
+      <mat-icon aria-label="Créer un dossier">check</mat-icon>
+    </button>
+  </div>
 </div>
 
 <tree-root

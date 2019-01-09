@@ -166,8 +166,13 @@ export class TbPhototagTreeLibComponent implements OnInit {
   /**
   * Create a new tag
   */
-  newTag(event: any) {
-    const name = event.target.value;
+  newTag(data: any) {
+    let name: string;
+    if (typeof(data) === 'object') {
+      name = data.target.value;
+    } else {
+      name = data;
+    }
     this.phototagService.createTag(name, 'Mes tags', this.userId, this.photoId).subscribe(tag => {
       this.treeService.growTree(tag.path, this.tree);
       this.treeService.placeTag(tag, this.tree);
@@ -176,7 +181,7 @@ export class TbPhototagTreeLibComponent implements OnInit {
       nodeToExpand.parent.expand();
       this.log.emit({module: 'tb-phototag-lib', type: 'info', message_fr: `Le tag ${tag.name} a bien été créé`});
     }, error => {
-      this.log.emit({module: 'tb-phototag-lib', type: 'error', message_fr: `Impossible de créer le tag ${event.target.value}`});
+      this.log.emit({module: 'tb-phototag-lib', type: 'error', message_fr: `Impossible de créer le tag ${name}`});
     });
     this.tagsHasChanged.emit(true);
     this.form.controls.tagInput.setValue('', {emitEvent: false});
@@ -185,8 +190,13 @@ export class TbPhototagTreeLibComponent implements OnInit {
   /**
   * Create a new folder
   */
-  newFolder(event: any) {
-    const name = event.target.value;
+  newFolder(data: any) {
+    let name: string;
+    if (typeof(data) === 'object') {
+      name = data.target.value;
+    } else {
+      name = data;
+    }
     this.treeService.growTree(name, this.tree);
     this.treeComponent.treeModel.update();
     this.form.controls.folderInput.setValue('', {emitEvent: false});

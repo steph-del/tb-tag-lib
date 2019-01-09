@@ -1,4 +1,6 @@
 import { Component } from '@angular/core';
+
+import { PhotoTag } from 'projects/tb-phototag-lib/src/lib/_models/phototag.model';
 import { TbLog } from 'projects/tb-phototag-lib/src/lib/_models/tb-log.model';
 
 @Component({
@@ -7,9 +9,10 @@ import { TbLog } from 'projects/tb-phototag-lib/src/lib/_models/tb-log.model';
   styleUrls: ['./app.component.css']
 })
 export class AppComponent {
-  photoTags = [
+  photoTags: Array<PhotoTag> = [
     {path: 'Plante', name: 'Feuille', id: 1, userId: null},
-    {path: 'Mes tags / Identiplante', name: 'Rosette', id: 6, userId: 123}
+    {path: 'Plante', name: 'Tige', id: 2, userId: null},
+    {path: 'Mes tags / Identiplante', name: 'Rosette', id: 6, userId: 123, photoId: 123456}
   ];
 
   log(log: TbLog) {
@@ -25,7 +28,25 @@ export class AppComponent {
     }
   }
 
-  tagToAdd(tag) {
-    console.log(tag);
+  addTag(tagToAdd: PhotoTag): void {
+    let alreadyExists = false;
+    this.photoTags.forEach(_tag => {
+      if (_tag === tagToAdd) { alreadyExists = true; }
+    });
+    if (!alreadyExists) {
+      setTimeout(() => {
+        this.photoTags.push(tagToAdd);
+      }, 1000);
+    }
+  }
+
+  removeTag(tagToRemove: PhotoTag): void {
+    console.log(tagToRemove);
+    console.log(this.photoTags);
+    let i = 0;
+    this.photoTags.forEach(_tag => {
+      if (_tag.id === tagToRemove.id && _tag.userId === tagToRemove.userId) { console.log('a'); this.photoTags.splice(i, 1); }
+      i++;
+    });
   }
 }

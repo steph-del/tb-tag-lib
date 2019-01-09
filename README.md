@@ -43,7 +43,8 @@ Exemple d'utilisation :
 | Propriété          | Valeur(s)                     | Remarque |
 | ---                | ---                           | ---         |
 | log                | TbLogModel                    | revoie tous les évènements utiles pour l'utilisateur ou pour le déboguage |
-| tags               | PhotoTagModel                 | renvoie le tag selectionné par l'utilisateur |
+| newTag             | PhotoTagModel                 | renvoie le tag selectionné (ajouté) par l'utilisateur |
+| tagToRemove        | PhotoTagModel                 | renvoie le tag supprimé par l'utilisateur |
 
 
 

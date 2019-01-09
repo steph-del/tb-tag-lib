@@ -3,25 +3,25 @@
   <mat-chip-list>
     <mat-chip
       *ngFor= "let tag of basicTags"
-      color="primary"
-      [selected]="basicTagAlreadyUsed(tag)"
-      [disabled]="basicTagAlreadyUsed(tag)"
+      [color]="getColor(tag)"
+      selected="true"
+      disabled="false"
       (click)="addTag(tag)">
       {{ tag.name }}
-      <mat-icon matChipRemove *ngIf="basicTagAlreadyUsed(tag)">cancel</mat-icon>
+      <mat-icon matChipRemove *ngIf="basicTagAlreadyUsed(tag)" (click)="removeBasicTag(tag)">cancel</mat-icon>
     </mat-chip>
   </mat-chip-list>
 
   <p><b>Mes tags</b></p>
-  <mat-chip-list class="basic-tags-chip-list">
+  <mat-chip-list>
     <mat-chip
       *ngFor= "let tag of userTags"
-      color="accent"
-      [selected]="userTagAlreadyUsed(tag)"
-      [disabled]="userTagAlreadyUsed(tag)"
+      [color]="getColor(tag)"
+      selected="true"
+      disabled="true"
       (click)="addTag(tag)">
       {{ tag.name }}
-      <mat-icon matChipRemove *ngIf="basicTagAlreadyUsed(tag)">cancel</mat-icon>
+      <mat-icon matChipRemove *ngIf="userTagAlreadyUsed(tag)" (click)="removeUserTag(tag)">cancel</mat-icon>
     </mat-chip>
   </mat-chip-list>
   <p *ngIf="userTags.length == 0">Vous n'avez aucun tag personnalisé pour l'instant</p>

@@ -1,5 +1,5 @@
-import { Component, OnInit, Input, Output, EventEmitter, ViewChild, ElementRef } from '@angular/core';
-import { FormBuilder, FormGroup } from '@angular/forms';
+import { Component, OnInit, Input, Output, EventEmitter } from '@angular/core';
+import { FormBuilder } from '@angular/forms';
 
 import { Observable } from 'rxjs';
 
@@ -14,8 +14,6 @@ import { TreeService } from '../_services/tb-tree.service';
   styleUrls: ['./tb-phototag.component.scss']
 })
 export class TbPhototagComponent implements OnInit {
-  @ViewChild('input') input: ElementRef<HTMLInputElement>;
-
   //
   // INPUT / OUTPUT
   //
@@ -25,12 +23,11 @@ export class TbPhototagComponent implements OnInit {
 
   @Output() log = new EventEmitter<TbLog>();
   @Output() newTag = new EventEmitter<PhotoTag>();
+  @Output() tagToRemove = new EventEmitter<PhotoTag>();
 
-  form: FormGroup;
   basicTags: Array<PhotoTag> = [];
   userTags: Array<PhotoTag> = [];
   filteredUserTags: Observable<PhotoTag[]>;
-  selectedTags: Array<PhotoTag> = [];
   isLoadingTags = false;
   showTree = false;
 
@@ -42,11 +39,6 @@ export class TbPhototagComponent implements OnInit {
   ngOnInit() {
     // Set userId available
     this.treeService.setUserId(this.userId);
-
-    // Create form
-    this.form = this.fb.group({
-      tagInput: this.fb.control('')
-    });
 
     // Get tags
     this.getTags(this.userId);
@@ -79,8 +71,6 @@ export class TbPhototagComponent implements OnInit {
       this.isLoadingTags = false;
       this.log.emit({module: 'tb-phototag-lib', type: 'error', message_fr: `Les tags utilisateurs n'ont pas pu être chargés`});
     });
-    // Set input to '' --> emit event --> filter available tags
-    this.form.controls.tagInput.setValue('');
   }
 
   /**
@@ -113,6 +103,21 @@ export class TbPhototagComponent implements OnInit {
       }
     }
     return false;
+  }
+
+  removeBasicTag(tag: PhotoTag) {
+    this.tagToRemove.emit(tag);
+  }
+
+  removeUserTag(tag: PhotoTag) {
+    this.tagToRemove.emit(tag);
+  }
+  getColor(tag: PhotoTag) {
+    if (this.basicTagAlreadyUsed(tag)) {
+      return 'primary';
+    } else {
+      return 'none';
+    }
   }
 
   /**

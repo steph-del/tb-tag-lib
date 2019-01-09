@@ -8,20 +8,20 @@ import { PhotoTag } from '../_models/phototag.model';
 export class TbPhototagLibService {
 
   fakeUserTags: Array<PhotoTag> = [
-    {path: 'Mes tags / Identiplante', name: 'Plantule', id: 5, userId: 123, photoId: 456},
-    {path: 'Mes tags / Identiplante', name: 'Rosette', id: 6, userId: 123, photoId: 456},
-    {path: 'Mes tags / Identiplante / Sauvage', name: 'Vert clair', id: 7, userId: 123, photoId: 456},
-    {path: 'Mes tags / Identiplante / Sauvage', name: 'Vert foncé', id: 8, userId: 123, photoId: 456}
+    {path: 'Mes tags / Identiplante', name: 'Plantule', id: 5, userId: 123, photoId: 123456},
+    {path: 'Mes tags / Identiplante', name: 'Rosette', id: 6, userId: 123, photoId: 123456},
+    {path: 'Mes tags / Identiplante / Sauvage', name: 'Vert clair', id: 7, userId: 123, photoId: 123456},
+    {path: 'Mes tags / Identiplante / Sauvage', name: 'Vert foncé', id: 8, userId: 123, photoId: 123456}
   ];
 
   constructor() { }
 
   getBasicTags(): Observable<Array<PhotoTag>> {
     const tags = [
-      {path: 'Plante', name: 'Feuille', id: 1, userId: null, photoId: 456},
-      {path: 'Plante', name: 'Tige', id: 2, userId: null, photoId: 456},
-      {path: 'Plante', name: 'Fleur', id: 3, userId: null, photoId: 456},
-      {path: 'Plante', name: 'Ecorce', id: 4, userId: null, photoId: 456}
+      {path: 'Plante', name: 'Feuille', id: 1, userId: null},
+      {path: 'Plante', name: 'Tige', id: 2, userId: null},
+      {path: 'Plante', name: 'Fleur', id: 3, userId: null},
+      {path: 'Plante', name: 'Ecorce', id: 4, userId: null}
     ];
     return of(tags);
   }

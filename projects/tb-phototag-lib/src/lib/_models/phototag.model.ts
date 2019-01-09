@@ -3,5 +3,5 @@ export interface PhotoTag {
   userId: number;
   name: string;
   path: string;
-  photoId: number;
+  photoId?: number;
 }
