@@ -85,6 +85,10 @@ export class TbPhototagComponent implements OnInit {
    */
   addTag(tag: PhotoTag): void {
     if (!this.basicTagAlreadyUsed(tag) || !this.userTagAlreadyUsed(tag)) {
+      tag.pending = true;
+      setTimeout(() => {
+        tag.pending = false;
+      }, 1000);
       this.newTag.emit(tag);
       this.log.emit({module: 'tb-phototag-lib', type: 'success', message_fr: `Le tag "${tag.name}" est ajouté à votre photo`});
     }

@@ -10,8 +10,8 @@ import { TbLog } from 'projects/tb-phototag-lib/src/lib/_models/tb-log.model';
 })
 export class AppComponent {
   photoTags: Array<PhotoTag> = [
-    {path: 'Plante', name: 'Feuille', id: 1, userId: null},
-    {path: 'Plante', name: 'Tige', id: 2, userId: null},
+    {path: 'Plante', name: 'Feuille', id: -1, userId: null},
+    {path: 'Plante', name: 'Tige', id: -2, userId: null},
     {path: 'Mes tags / Identiplante', name: 'Plantule', id: 1, userId: 123}
   ];
 

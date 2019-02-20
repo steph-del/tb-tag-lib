@@ -4,4 +4,5 @@ export interface PhotoTag {
   name: string;
   path: string;
   photoId?: number;
+  pending?: boolean;
 }

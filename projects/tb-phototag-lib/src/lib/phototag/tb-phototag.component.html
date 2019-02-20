@@ -8,6 +8,7 @@
       disabled="false"
       (click)="addTag(tag)">
       {{ tag.name }}
+      <mat-spinner class="tagSpinner" diameter="16" *ngIf="tag.pending"></mat-spinner>
       <mat-icon matChipRemove *ngIf="basicTagAlreadyUsed(tag)" (click)="removeBasicTag(tag)">cancel</mat-icon>
     </mat-chip>
   </mat-chip-list>
@@ -21,6 +22,7 @@
       disabled="true"
       (click)="addTag(tag)">
       {{ tag.name }}
+      <mat-spinner class="tagSpinner" diameter="16" *ngIf="tag.pending"></mat-spinner>
       <mat-icon matChipRemove *ngIf="userTagAlreadyUsed(tag)" (click)="removeUserTag(tag)">cancel</mat-icon>
     </mat-chip>
   </mat-chip-list>
