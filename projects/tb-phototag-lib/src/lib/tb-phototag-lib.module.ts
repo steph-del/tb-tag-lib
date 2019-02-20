@@ -1,5 +1,6 @@
 import { NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
+import { HttpClientModule } from '@angular/common/http';
 import { ReactiveFormsModule } from '@angular/forms';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { MatInputModule, MatAutocompleteModule, MatProgressSpinnerModule, MatChipsModule, MatIconModule, MatDialogModule, MatButtonModule, MatMenuModule } from '@angular/material';
@@ -15,6 +16,7 @@ import { TreeService } from './_services/tb-tree.service';
     BrowserModule,
     ReactiveFormsModule,
     BrowserAnimationsModule,
+    HttpClientModule,
     TreeModule.forRoot(),
     MatInputModule, MatAutocompleteModule, MatProgressSpinnerModule, MatChipsModule, MatIconModule, MatDialogModule, MatButtonModule, MatMenuModule
   ],

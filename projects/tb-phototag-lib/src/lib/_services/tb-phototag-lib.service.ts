@@ -1,5 +1,7 @@
 import { Injectable } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
 import { Observable, of } from 'rxjs';
+import { map, tap } from 'rxjs/operators';
 import { PhotoTag } from '../_models/phototag.model';
 
 @Injectable({
@@ -7,14 +9,20 @@ import { PhotoTag } from '../_models/phototag.model';
 })
 export class TbPhototagLibService {
 
-  fakeUserTags: Array<PhotoTag> = [
-    {path: 'Mes tags / Identiplante', name: 'Plantule', id: 5, userId: 123, photoId: 123456},
-    {path: 'Mes tags / Identiplante', name: 'Rosette', id: 6, userId: 123, photoId: 123456},
-    {path: 'Mes tags / Identiplante / Sauvage', name: 'Vert clair', id: 7, userId: 123, photoId: 123456},
-    {path: 'Mes tags / Identiplante / Sauvage', name: 'Vert foncé', id: 8, userId: 123, photoId: 123456}
-  ];
+  baseApiUrl: string;
+  apiPath = '/api/photo_tags';
 
-  constructor() { }
+  usersTags: Array<PhotoTag> = [];
+
+  constructor(private http: HttpClient) { }
+
+  public setBaseApiUrl(data): void {
+    this.baseApiUrl = data;
+  }
+
+  public setUsersTags(tags: Array<PhotoTag>): void {
+    this.usersTags = tags;
+  }
 
   getBasicTags(): Observable<Array<PhotoTag>> {
     const tags = [
@@ -28,15 +36,18 @@ export class TbPhototagLibService {
 
   getUserTags(userId: number): Observable<Array<PhotoTag>> {
     // Call API and get user's tags
-    return of(this.fakeUserTags);
+    return this.http.get(`${this.baseApiUrl}${this.apiPath}.json`).pipe(
+      map(r => <Array<PhotoTag>>r),
+      tap(r => this.setUsersTags(r))
+    );
   }
 
   removeTag(tag: PhotoTag): Observable<{success: boolean}> {
     // call API
     let i = 0;
-    this.fakeUserTags.forEach(_tag => {
+    this.usersTags.forEach(_tag => {
       if (_tag.id === tag.id) {
-        this.fakeUserTags.splice(i, 1);
+        this.usersTags.splice(i, 1);
         return of({success: true });
       }
       i++;
@@ -44,36 +55,31 @@ export class TbPhototagLibService {
     return of({ success: false });
   }
 
-  updateTag(tag: PhotoTag): Observable<PhotoTag> {
+  updateTag(tag: PhotoTag): Observable<any> {
     // update existing tag through API
-    // call API...
-    let i = 0;
-    this.fakeUserTags.forEach(_tag => {
-      if (_tag.id === tag.id) { this.fakeUserTags[i] = tag; }
-      i++;
-    });
-    // const response = tag;
-    return of(tag);
-    // return throwError(tag); // test : throw an error
+    return this.http.patch(`${this.baseApiUrl}${this.apiPath}/${tag.id}`, {name: tag.name, path: tag.path});
   }
 
   /**
    * When a folder is renamed, all children tags must be updated
    */
   rewriteTagsPaths(path: string, newPath: string): void {
-    this.fakeUserTags.forEach(tagMayBeUpdated => {
+    this.usersTags.forEach(tagMayBeUpdated => {
       if (tagMayBeUpdated.path === path) {
         tagMayBeUpdated.path = newPath;
-        this.updateTag(tagMayBeUpdated);
+        this.updateTag(tagMayBeUpdated).subscribe(
+          success => { /* cool */ },
+          error => {
+            // Can't do anything inside the service !
+           }
+        );
       }
     });
   }
 
-  createTag(name, path, userId, photoId): Observable<PhotoTag> {
+  createTag(name: string, path: string, userId: number, photoId: number): Observable<any> {
     // Call API
-    // Next line for dev only / When API will be connected, user's tag will be correcly retrieved from server
-    const id = Math.floor(Math.random() * 10000 + 100);
-    this.fakeUserTags.push({id: id, userId: userId, name: name, path: path, photoId: photoId});
-    return of({id: id, userId: userId, name: name, path: path, photoId: photoId});
+    return this.http.post(`${this.baseApiUrl}${this.apiPath}`, {name: name, path: path, userId: userId});
+
   }
 }

@@ -24,7 +24,9 @@
       <mat-icon matChipRemove *ngIf="userTagAlreadyUsed(tag)" (click)="removeUserTag(tag)">cancel</mat-icon>
     </mat-chip>
   </mat-chip-list>
-  <p *ngIf="userTags.length == 0">Vous n'avez aucun tag personnalisé pour l'instant</p>
+  <p *ngIf="isLoadingUsersTags">Chargement de vos tags personnalisés...</p>
+  <p *ngIf="userTags.length == 0 && !isLoadingUsersTags && !cantLoadUsersTags">Vous n'avez aucun tag personnalisé pour l'instant</p>
+  <p *ngIf="!isLoadingUsersTags && cantLoadUsersTags">Nous n'arrivons pas à récupérer vos tags personnalisés...</p>
 
   <br />
   <button mat-raised-button (click)="toggleTree()">Gérer mes tags</button>

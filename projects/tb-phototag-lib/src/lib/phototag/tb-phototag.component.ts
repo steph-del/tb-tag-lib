@@ -20,6 +20,7 @@ export class TbPhototagComponent implements OnInit {
   @Input() userId: number;
   @Input() photoId: number;
   @Input() photoTags: Array<PhotoTag> = [];
+  @Input() baseApiUrl = 'http://localhost:8000';
 
   @Output() log = new EventEmitter<TbLog>();
   @Output() newTag = new EventEmitter<PhotoTag>();
@@ -28,7 +29,9 @@ export class TbPhototagComponent implements OnInit {
   basicTags: Array<PhotoTag> = [];
   userTags: Array<PhotoTag> = [];
   filteredUserTags: Observable<PhotoTag[]>;
-  isLoadingTags = false;
+  isLoadingBasicTags = false;
+  isLoadingUsersTags = false;
+  cantLoadUsersTags = false;
   showTree = false;
 
   constructor(
@@ -37,6 +40,8 @@ export class TbPhototagComponent implements OnInit {
     private fb: FormBuilder) { }
 
   ngOnInit() {
+    // Set baseApiUrl
+    this.phototagService.setBaseApiUrl(this.baseApiUrl);
     // Set userId available
     this.treeService.setUserId(this.userId);
 
@@ -52,23 +57,25 @@ export class TbPhototagComponent implements OnInit {
     this.userTags = [];
 
     // Get basic tags
-    this.isLoadingTags = true;
+    this.isLoadingBasicTags = true;
     this.phototagService.getBasicTags().subscribe(_tags => {
       this.log.emit({module: 'tb-phototag-lib', type: 'info', message_fr: `Les tags par défaut ont bien été chargés`});
-      this.isLoadingTags = false;
+      this.isLoadingBasicTags = false;
       this.basicTags = _tags;
     }, error => {
-      this.isLoadingTags = false;
+      this.isLoadingBasicTags = false;
       this.log.emit({module: 'tb-phototag-lib', type: 'error', message_fr: `Les tags par défaut n'ont pas pu être chargés`});
     });
 
     // Get user's tags
+    this.isLoadingUsersTags = true;
     this.phototagService.getUserTags(userId).subscribe(_tags => {
       this.log.emit({module: 'tb-phototag-lib', type: 'info', message_fr: `Les tags utilisateurs ont bien été chargés`});
-      this.isLoadingTags = false;
+      this.isLoadingUsersTags = false;
       this.userTags = this.userTags.concat(_tags);
     }, error => {
-      this.isLoadingTags = false;
+      this.isLoadingUsersTags = false;
+      this.cantLoadUsersTags = true;
       this.log.emit({module: 'tb-phototag-lib', type: 'error', message_fr: `Les tags utilisateurs n'ont pas pu être chargés`});
     });
   }
@@ -112,6 +119,7 @@ export class TbPhototagComponent implements OnInit {
   removeUserTag(tag: PhotoTag) {
     this.tagToRemove.emit(tag);
   }
+
   getColor(tag: PhotoTag) {
     if (this.basicTagAlreadyUsed(tag)) {
       return 'primary';

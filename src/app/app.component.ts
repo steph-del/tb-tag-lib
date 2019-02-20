@@ -12,7 +12,7 @@ export class AppComponent {
   photoTags: Array<PhotoTag> = [
     {path: 'Plante', name: 'Feuille', id: 1, userId: null},
     {path: 'Plante', name: 'Tige', id: 2, userId: null},
-    {path: 'Mes tags / Identiplante', name: 'Rosette', id: 6, userId: 123, photoId: 123456}
+    {path: 'Mes tags / Identiplante', name: 'Plantule', id: 1, userId: 123}
   ];
 
   log(log: TbLog) {
@@ -36,6 +36,7 @@ export class AppComponent {
     if (!alreadyExists) {
       setTimeout(() => {
         this.photoTags.push(tagToAdd);
+        console.log(this.photoTags);
       }, 1000);
     }
   }

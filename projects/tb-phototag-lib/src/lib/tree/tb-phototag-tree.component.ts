@@ -49,7 +49,7 @@ export class TbPhototagTreeLibComponent implements OnInit {
 
   ngOnInit() {
     this.userId = this.treeService.userId;
-    this.resetTree(this.userId);
+    this.resetTree();
 
     // Create form
     this.form = this.fb.group({
@@ -73,10 +73,11 @@ export class TbPhototagTreeLibComponent implements OnInit {
       // update node
       this.phototagService.updateTag({id: movedNode.id, userId: this.userId, name: movedNode.name, path: newPath, photoId: this.photoId})
       .subscribe(result => {
-        this.log.emit({module: 'tb-phototag-lib', type: 'info', message_fr: `Le tag ${movedNode.name} a bien été déplacé et enregistré`});
+        this.log.emit({module: 'tb-phototag-lib', type: 'info', message_fr: `Le tag "${movedNode.name}" a bien été déplacé et enregistré`});
       }, error => {
-        // @todo undo change
-        this.log.emit({module: 'tb-phototag-lib', type: 'error', message_fr: `Le tag ${movedNode.name} n'a pas pu être déplacé et enregistré`});
+        // reset tree
+        this.resetTree();
+        this.log.emit({module: 'tb-phototag-lib', type: 'error', message_fr: `Le tag "${movedNode.name}" n'a pas pu être déplacé et enregistré`});
       });
     }
 
@@ -110,10 +111,10 @@ export class TbPhototagTreeLibComponent implements OnInit {
       // update tag
       const tag: PhotoTag = {id: node.data.id, userId: node.data.userId, path: node.data.path, name: newName, photoId: this.photoId};
       this.phototagService.updateTag(tag).subscribe(resultTag => {
-        this.log.emit({module: 'tb-phototag-lib', type: 'info', message_fr: `Le tag ${tag.name} a bien été enregistré`});
+        this.log.emit({module: 'tb-phototag-lib', type: 'info', message_fr: `Le tag "${tag.name}" a bien été enregistré`});
         node.data.name = newName;
       }, error => {
-        this.log.emit({module: 'tb-phototag-lib', type: 'error', message_fr: `Le tag ${tag.name} n'a pas pu être enregistré`});
+        this.log.emit({module: 'tb-phototag-lib', type: 'error', message_fr: `Le tag "${tag.name}" n'a pas pu être enregistré`});
       });
     }
 
@@ -145,9 +146,9 @@ export class TbPhototagTreeLibComponent implements OnInit {
       });
       if (j !== null) { parentTreeNodeToRemove.data.children.splice(j, 1); }
       this.treeComponent.treeModel.update();
-      this.log.emit({module: 'tb-phototag-lib', type: 'info', message_fr: `Le tag ${tag.name} a bien été supprimé`});
+      this.log.emit({module: 'tb-phototag-lib', type: 'info', message_fr: `Le tag "${tag.name}" a bien été supprimé`});
     }, error => {
-      this.log.emit({module: 'tb-phototag-lib', type: 'error', message_fr: `Impossible de supprimer le tag ${tag.name}`});
+      this.log.emit({module: 'tb-phototag-lib', type: 'error', message_fr: `Impossible de supprimer le tag "${tag.name}"`});
     });
 
     this.tagsHasChanged.emit(true);
@@ -179,9 +180,9 @@ export class TbPhototagTreeLibComponent implements OnInit {
       this.treeComponent.treeModel.update();
       const nodeToExpand: TreeNode = this.treeComponent.treeModel.getNodeById(tag.id);
       nodeToExpand.parent.expand();
-      this.log.emit({module: 'tb-phototag-lib', type: 'info', message_fr: `Le tag ${tag.name} a bien été créé`});
+      this.log.emit({module: 'tb-phototag-lib', type: 'info', message_fr: `Le tag "${tag.name}" a bien été créé`});
     }, error => {
-      this.log.emit({module: 'tb-phototag-lib', type: 'error', message_fr: `Impossible de créer le tag ${name}`});
+      this.log.emit({module: 'tb-phototag-lib', type: 'error', message_fr: `Impossible de créer le tag "${name}"`});
     });
     this.tagsHasChanged.emit(true);
     this.form.controls.tagInput.setValue('', {emitEvent: false});
@@ -197,7 +198,7 @@ export class TbPhototagTreeLibComponent implements OnInit {
     } else {
       name = data;
     }
-    this.treeService.growTree(name, this.tree);
+    this.treeService.growTree('Mes tags' + ' / ' + name, this.tree);
     this.treeComponent.treeModel.update();
     this.form.controls.folderInput.setValue('', {emitEvent: false});
   }
@@ -205,7 +206,7 @@ export class TbPhototagTreeLibComponent implements OnInit {
   /**
   * Reset the tree of tags : insert basic tags and user's tags
   */
-  resetTree(userId: number): void {
+  resetTree(): void {
     this.tree = [];
 
     // get user's tags
@@ -215,6 +216,9 @@ export class TbPhototagTreeLibComponent implements OnInit {
       if (tags.length > 0) {
         tags.forEach(tag => { this.treeService.growTree(tag.path, this.tree); });
         tags.forEach(tag => { this.treeService.placeTag(tag, this.tree); });
+        this.treeComponent.treeModel.update();
+        this.treeComponent.treeModel.expandAll();
+        this.treeComponent.sizeChanged();
       }
     });
   }

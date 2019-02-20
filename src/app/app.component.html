@@ -1,6 +1,7 @@
 <tb-phototag
 [userId]=123
 [photoTags]=photoTags
+baseApiUrl="http://localhost:8000"
 (newTag)="addTag($event)"
 (tagToRemove)="removeTag($event)"
 (log)="log($event)"></tb-phototag>
