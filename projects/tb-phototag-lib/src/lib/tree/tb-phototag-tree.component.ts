@@ -113,12 +113,11 @@ export class TbPhototagTreeLibComponent implements OnInit {
       this.phototagService.updateTag(tag).subscribe(resultTag => {
         this.log.emit({module: 'tb-phototag-lib', type: 'info', message_fr: `Le tag "${tag.name}" a bien été enregistré`});
         node.data.name = newName;
+        this.tagsHasChanged.emit(true);
       }, error => {
         this.log.emit({module: 'tb-phototag-lib', type: 'error', message_fr: `Le tag "${tag.name}" n'a pas pu être enregistré`});
       });
     }
-
-    this.tagsHasChanged.emit(true);
   }
 
   /**
