@@ -33,6 +33,7 @@ Exemple d'utilisation :
 
 | Paramètre                 | Requis | Type     | Valeurs | Valeur par défaut | Description |
 | ---                       | ---    | ---      | ---     | ---               | ---         |
+| baseApiUrl                | Oui    | string   |         | 'http://localhost:8000/api' | |
 | userId                    | Oui    | number   |         | /                 | identifiant de l'utilisateur. Utitlisé pour récupérer / ajouter / modifier ses tags |
 | photoId                   | Oui    | number   |         | /                 | identifiant de la photo |
 
