@@ -40,6 +40,10 @@ export class TbPhototagComponent implements OnInit {
     private fb: FormBuilder) { }
 
   ngOnInit() {
+    // photoId provided ?
+    if (!this.photoId) {
+      this.log.emit({module: 'tb-phototag-lib', type: 'error', message_fr: 'Vous devez fournir un photoId pour initialiser le module'});
+    }
     // Set baseApiUrl
     this.phototagService.setBaseApiUrl(this.baseApiUrl);
     // Set userId available
@@ -81,17 +85,37 @@ export class TbPhototagComponent implements OnInit {
   }
 
   /**
-   * When user select a tag, emit it
+   * When user select a tag, link it to the photo and emit the tag
    */
-  addTag(tag: PhotoTag): void {
+  linkTag(tag: PhotoTag): void {
     if (!this.basicTagAlreadyUsed(tag) || !this.userTagAlreadyUsed(tag)) {
       tag.pending = true;
-      setTimeout(() => {
-        tag.pending = false;
-      }, 1000);
-      this.newTag.emit(tag);
-      this.log.emit({module: 'tb-phototag-lib', type: 'success', message_fr: `Le tag "${tag.name}" est ajouté à votre photo`});
+      this.phototagService.linkTagToPhoto(tag.id, this.photoId).subscribe(
+        success => {
+          this.newTag.emit(tag);
+          this.log.emit({module: 'tb-phototag-lib', type: 'success', message_fr: `Le tag "${tag.name}" est ajouté à votre photo`});
+          tag.pending = false;
+        },
+        error => {
+          console.log('error', error);
+          tag.pending = false;
+          this.log.emit({module: 'tb-phototag-lib', type: 'error', message_fr: `Impossible de lier le tag "${tag.name}" à votre photo`});
+        }
+      );
     }
+  }
+
+  /**
+   * When user unselect a tag, unlink it to the photo and emit the tag
+   */
+  unlinkTag(tag: PhotoTag): void {
+    this.phototagService.unlinkTagToPhoto(tag.id, this.photoId).subscribe(
+      success => {
+        this.tagToRemove.emit(tag);
+      }, error => {
+        this.log.emit({module: 'tb-phototag-lib', type: 'error', message_fr: `Impossible de supprimer le lien entre le tag "${tag.name}" et votre photo`});
+      }
+    );
   }
 
   toggleTree() {
@@ -116,13 +140,13 @@ export class TbPhototagComponent implements OnInit {
     return false;
   }
 
-  removeBasicTag(tag: PhotoTag) {
+  /*removeBasicTag(tag: PhotoTag) {
     this.tagToRemove.emit(tag);
   }
 
   removeUserTag(tag: PhotoTag) {
     this.tagToRemove.emit(tag);
-  }
+  }*/
 
   getColor(tag: PhotoTag) {
     if (this.basicTagAlreadyUsed(tag)) {

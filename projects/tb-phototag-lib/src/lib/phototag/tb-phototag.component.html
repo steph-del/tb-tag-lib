@@ -6,10 +6,10 @@
       [color]="getColor(tag)"
       selected="true"
       disabled="false"
-      (click)="addTag(tag)">
+      (click)="linkTag(tag)">
       {{ tag.name }}
       <mat-spinner class="tagSpinner" diameter="16" *ngIf="tag.pending"></mat-spinner>
-      <mat-icon matChipRemove *ngIf="basicTagAlreadyUsed(tag)" (click)="removeBasicTag(tag)">cancel</mat-icon>
+      <mat-icon matChipRemove *ngIf="basicTagAlreadyUsed(tag)" (click)="unlinkTag(tag)">cancel</mat-icon>
     </mat-chip>
   </mat-chip-list>
 
@@ -20,10 +20,10 @@
       [color]="getColor(tag)"
       selected="true"
       disabled="true"
-      (click)="addTag(tag)">
+      (click)="linkTag(tag)">
       {{ tag.name }}
       <mat-spinner class="tagSpinner" diameter="16" *ngIf="tag.pending"></mat-spinner>
-      <mat-icon matChipRemove *ngIf="userTagAlreadyUsed(tag)" (click)="removeUserTag(tag)">cancel</mat-icon>
+      <mat-icon matChipRemove *ngIf="userTagAlreadyUsed(tag)" (click)="unlinkTag(tag)">cancel</mat-icon>
     </mat-chip>
   </mat-chip-list>
   <p *ngIf="isLoadingUsersTags">Chargement de vos tags personnalisés...</p>

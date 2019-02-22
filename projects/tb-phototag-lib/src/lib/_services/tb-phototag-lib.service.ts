@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, of } from 'rxjs';
-import { map, tap } from 'rxjs/operators';
+import { map, tap, mergeMap } from 'rxjs/operators';
 import { PhotoTag } from '../_models/phototag.model';
 
 @Injectable({
@@ -11,6 +11,8 @@ export class TbPhototagLibService {
 
   baseApiUrl: string;
   apiPath = '/api/photo_tags';
+  apiRelationPath = '/api/photo_photo_tag_relations';
+  apiRetrievePath = '/api/photos/{id}/photo_tag_relations';
 
   usersTags: Array<PhotoTag> = [];
 
@@ -80,6 +82,46 @@ export class TbPhototagLibService {
   createTag(name: string, path: string, userId: number, photoId: number): Observable<any> {
     // Call API
     return this.http.post(`${this.baseApiUrl}${this.apiPath}`, {name: name, path: path, userId: userId});
+  }
 
+  linkTagToPhoto(tagId: number, photoId: number): Observable<any> {
+    const headers = {
+      'content-type': 'application/ld+json',
+      'accept': 'application/json'
+    };
+    return this.http.post(`${this.baseApiUrl}${this.apiRelationPath}`, {'photo': `/api/photos/${photoId}`, 'photoTag': `/api/photo_tags/${tagId}`}, {headers});
+  }
+
+  unlinkTagToPhoto(tagId: number, photoId: number): Observable<any> {
+    const headers = {
+      'content-type': 'application/ld+json',
+      'accept': 'application/json'
+    };
+
+    return this.http.get(`${this.baseApiUrl}${this.apiRetrievePath.replace('{id}', photoId.toString())}`, {headers})
+      .pipe(
+        map(r => r as Array<any>),
+        map(r => {
+          if (r.length > 0) {
+            const relations = r;
+            for (const relation of relations) {
+              if (relation['photoTag']['id'] === tagId) {
+                // We get the relation id between photoId and tagId
+                return of(relation['id']);
+              }
+            }
+          } else {
+            // no relation found
+            return of(null);
+          }
+        }),
+        mergeMap(relationId => {
+          if (relationId['value'] === null) {
+            throw new Error;
+          } else {
+            return this.http.delete(`${this.baseApiUrl}${this.apiRelationPath}/${relationId['value']}`);
+          }
+        })
+      );
   }
 }
