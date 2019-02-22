@@ -51,7 +51,6 @@ export class TbPhototagComponent implements OnInit {
     this.phototagService.getPhotoTags(this.photoId).subscribe(
       result => {
         this.photoTags = result['value'];
-        console.log('photoTags :', this.photoTags['value']);
       },
       error => console.log(error)
     );
@@ -66,7 +65,6 @@ export class TbPhototagComponent implements OnInit {
    */
   getTags(userId: number): void {
     this.userTags = [];
-
     // Get basic tags
     this.isLoadingBasicTags = true;
     this.phototagService.getBasicTags().subscribe(_tags => {
