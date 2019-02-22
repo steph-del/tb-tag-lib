@@ -13,6 +13,10 @@ export class TbPhototagLibService {
   apiPath = '/api/photo_tags';
   apiRelationPath = '/api/photo_photo_tag_relations';
   apiRetrievePath = '/api/photos/{id}/photo_tag_relations';
+  obj1Name = 'photo';
+  obj1 = '/api/photos';
+  obj2Name = 'photoTag';
+  obj2 = '/api/photo_tags';
 
   usersTags: Array<PhotoTag> = [];
 
@@ -20,6 +24,34 @@ export class TbPhototagLibService {
 
   public setBaseApiUrl(data): void {
     this.baseApiUrl = data;
+  }
+
+  public setApiPAth(value: string): void {
+    this.apiPath = value;
+  }
+
+  public setApiRelationPath(value: string): void {
+    this.apiRelationPath = value;
+  }
+
+  public setApiRetrievePath(value: string): void {
+    this.apiRetrievePath = value;
+  }
+
+  public setObj1Name(value: string): void {
+    this.obj1Name = value;
+  }
+
+  public setObj1(value: string): void {
+    this.obj1 = value;
+  }
+
+  public setObj2Name(value: string): void {
+    this.obj2Name = value;
+  }
+
+  public setObj2(value: string): void {
+    this.obj2 = value;
   }
 
   public setUsersTags(tags: Array<PhotoTag>): void {
@@ -56,7 +88,7 @@ export class TbPhototagLibService {
       map(results => {
         const tags = [];
         for (const result of results) {
-          tags.push(result['photoTag']);
+          tags.push(result[this.obj2Name]);
         }
         return of(tags);
       })
@@ -108,7 +140,7 @@ export class TbPhototagLibService {
       'content-type': 'application/ld+json',
       'accept': 'application/json'
     };
-    return this.http.post(`${this.baseApiUrl}${this.apiRelationPath}`, {'photo': `/api/photos/${photoId}`, 'photoTag': `/api/photo_tags/${tagId}`}, {headers});
+    return this.http.post(`${this.baseApiUrl}${this.apiRelationPath}`, {[this.obj1Name]: `${this.obj1}/${photoId}`, [this.obj2Name]: `${this.obj2}/${tagId}`}, {headers});
   }
 
   unlinkTagToPhoto(tagId: number, photoId: number): Observable<any> {
@@ -124,7 +156,7 @@ export class TbPhototagLibService {
           if (r.length > 0) {
             const relations = r;
             for (const relation of relations) {
-              if (relation['photoTag']['id'] === tagId) {
+              if (relation[this.obj2Name]['id'] === tagId) {
                 // We get the relation id between photoId and tagId
                 return of(relation['id']);
               }

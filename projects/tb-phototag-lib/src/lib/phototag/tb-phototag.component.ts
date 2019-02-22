@@ -20,6 +20,13 @@ export class TbPhototagComponent implements OnInit {
   @Input() userId: number;
   @Input() photoId: number;
   @Input() baseApiUrl = 'http://localhost:8000';
+  @Input() apiPath = '/api/photo_tags';
+  @Input() apiRelationPath = '/api/photo_photo_tag_relations';
+  @Input() apiRetrievePath = '/api/photos/{id}/photo_tag_relations';
+  @Input() obj1Name = 'photo';
+  @Input() obj1 = '/api/photos';
+  @Input() obj2Name = 'photoTag';
+  @Input() obj2 = '/api/photo_tags';
 
   @Output() log = new EventEmitter<TbLog>();
 
@@ -42,8 +49,15 @@ export class TbPhototagComponent implements OnInit {
     if (!this.photoId) {
       this.log.emit({module: 'tb-phototag-lib', type: 'error', message_fr: 'Vous devez fournir un photoId pour initialiser le module'});
     }
-    // Set baseApiUrl
+    // Set API urls
     this.phototagService.setBaseApiUrl(this.baseApiUrl);
+    this.phototagService.setApiPAth(this.apiPath);
+    this.phototagService.setApiRelationPath(this.apiRelationPath);
+    this.phototagService.setApiRetrievePath(this.apiRetrievePath);
+    this.phototagService.setObj1Name(this.obj1Name);
+    this.phototagService.setObj1(this.obj1);
+    this.phototagService.setObj2Name(this.obj2Name);
+    this.phototagService.setObj2(this.obj2);
     // Set userId available
     this.treeService.setUserId(this.userId);
 
