@@ -97,7 +97,6 @@ export class TbPhototagComponent implements OnInit {
           tag.pending = false;
         },
         error => {
-          console.log('error', error);
           tag.pending = false;
           this.log.emit({module: 'tb-phototag-lib', type: 'error', message_fr: `Impossible de lier le tag "${tag.name}" à votre photo`});
         }
