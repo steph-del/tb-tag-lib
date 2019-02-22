@@ -44,6 +44,25 @@ export class TbPhototagLibService {
     );
   }
 
+  getPhotoTags(photoId: number): Observable<any> {
+    const headers = {
+      'content-type': 'application/ld+json',
+      'accept': 'application/json'
+    };
+
+    return this.http.get(`${this.baseApiUrl}${this.apiRetrievePath.replace('{id', photoId.toString())}`, {headers})
+    .pipe(
+      map(results => results as Array<any>),
+      map(results => {
+        const tags = [];
+        for (const result of results) {
+          tags.push(result['photoTag']);
+        }
+        return of(tags);
+      })
+    );
+  }
+
   removeTag(tag: PhotoTag): Observable<{success: boolean}> {
     // call API
     let i = 0;

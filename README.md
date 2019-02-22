@@ -35,7 +35,6 @@ Exemple d'utilisation :
 | ---                       | ---    | ---      | ---     | ---               | ---         |
 | userId                    | Oui    | number   |         | /                 | identifiant de l'utilisateur. Utitlisé pour récupérer / ajouter / modifier ses tags |
 | photoId                   | Oui    | number   |         | /                 | identifiant de la photo |
-| photoTags                 |        | `Array<PhotoTag>`   |  | / | (optionnel) si la photo contient déjà certains tags, ils seront grisés et non cliquables |
 
 
 ### Paramètres en sortie @Output
@@ -43,9 +42,6 @@ Exemple d'utilisation :
 | Propriété          | Valeur(s)                     | Remarque |
 | ---                | ---                           | ---         |
 | log                | TbLogModel                    | revoie tous les évènements utiles pour l'utilisateur ou pour le déboguage |
-| newTag             | PhotoTagModel                 | renvoie le tag selectionné (ajouté) par l'utilisateur |
-| tagToRemove        | PhotoTagModel                 | renvoie le tag supprimé par l'utilisateur |
-
 
 
 TbLogModel :

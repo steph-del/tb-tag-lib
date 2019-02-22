@@ -19,15 +19,13 @@ export class TbPhototagComponent implements OnInit {
   //
   @Input() userId: number;
   @Input() photoId: number;
-  @Input() photoTags: Array<PhotoTag> = [];
   @Input() baseApiUrl = 'http://localhost:8000';
 
   @Output() log = new EventEmitter<TbLog>();
-  @Output() newTag = new EventEmitter<PhotoTag>();
-  @Output() tagToRemove = new EventEmitter<PhotoTag>();
 
   basicTags: Array<PhotoTag> = [];
   userTags: Array<PhotoTag> = [];
+  photoTags: Array<PhotoTag> = [];
   filteredUserTags: Observable<PhotoTag[]>;
   isLoadingBasicTags = false;
   isLoadingUsersTags = false;
@@ -48,6 +46,15 @@ export class TbPhototagComponent implements OnInit {
     this.phototagService.setBaseApiUrl(this.baseApiUrl);
     // Set userId available
     this.treeService.setUserId(this.userId);
+
+    // get photo tags
+    this.phototagService.getPhotoTags(this.photoId).subscribe(
+      result => {
+        this.photoTags = result['value'];
+        console.log('photoTags :', this.photoTags['value']);
+      },
+      error => console.log(error)
+    );
 
     // Get tags
     this.getTags(this.userId);
@@ -92,7 +99,7 @@ export class TbPhototagComponent implements OnInit {
       tag.pending = true;
       this.phototagService.linkTagToPhoto(tag.id, this.photoId).subscribe(
         success => {
-          this.newTag.emit(tag);
+          this.photoTags.push(tag);
           this.log.emit({module: 'tb-phototag-lib', type: 'success', message_fr: `Le tag "${tag.name}" est ajouté à votre photo`});
           tag.pending = false;
         },
@@ -110,7 +117,11 @@ export class TbPhototagComponent implements OnInit {
   unlinkTag(tag: PhotoTag): void {
     this.phototagService.unlinkTagToPhoto(tag.id, this.photoId).subscribe(
       success => {
-        this.tagToRemove.emit(tag);
+        let i = 0;
+        this.photoTags.forEach(photoTag => {
+          if (photoTag.id === tag.id) { this.photoTags.splice(i, 1); }
+          i++;
+        });
       }, error => {
         this.log.emit({module: 'tb-phototag-lib', type: 'error', message_fr: `Impossible de supprimer le lien entre le tag "${tag.name}" et votre photo`});
       }
@@ -138,14 +149,6 @@ export class TbPhototagComponent implements OnInit {
     }
     return false;
   }
-
-  /*removeBasicTag(tag: PhotoTag) {
-    this.tagToRemove.emit(tag);
-  }
-
-  removeUserTag(tag: PhotoTag) {
-    this.tagToRemove.emit(tag);
-  }*/
 
   getColor(tag: PhotoTag) {
     if (this.basicTagAlreadyUsed(tag)) {
