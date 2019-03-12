@@ -27,10 +27,15 @@ export class TbPhototagComponent implements OnInit {
   @Input() obj1 = '/api/photos';
   @Input() obj2Name = 'photoTag';
   @Input() obj2 = '/api/photo_tags';
+  @Input() set basicTags(data: Array<PhotoTag>) {
+    this._basicTags = data;
+    this.phototagService.setBasicTags(data);
+  }
 
   @Output() log = new EventEmitter<TbLog>();
 
-  basicTags: Array<PhotoTag> = [];
+  _basicTags: Array<PhotoTag> = [];
+  basicTagsByCategory: Array<Array<PhotoTag>> = [];
   userTags: Array<PhotoTag> = [];
   photoTags: Array<PhotoTag> = [];
   filteredUserTags: Observable<PhotoTag[]>;
@@ -90,6 +95,8 @@ export class TbPhototagComponent implements OnInit {
       this.log.emit({module: 'tb-phototag-lib', type: 'error', message_fr: `Les tags par défaut n'ont pas pu être chargés`});
     });
 
+    this.phototagService.getBasicTagsByPath().subscribe(_tags => this.basicTagsByCategory = _tags);
+
     // Get user's tags
     this.isLoadingUsersTags = true;
     this.phototagService.getUserTags(userId).subscribe(_tags => {
@@ -140,6 +147,60 @@ export class TbPhototagComponent implements OnInit {
     );
   }
 
+  /**
+   * When user select a basic tag, we create a new tag in db and then do the link
+   */
+  addBasicTag(tag: PhotoTag) {
+    if (this.basicTagAlreadyUsed(tag)) { return; }
+    tag.pending = true;
+    tag.userId = this.userId;
+    // is tag already exists ?
+    let alreadyExistInDb = false;
+    let tagToLink: PhotoTag = null;
+    for (const uTag of this.userTags) {
+      if (uTag.name === tag.name && uTag.path === tag.path) { alreadyExistInDb = true; tagToLink = uTag; }
+    }
+
+    if (alreadyExistInDb) {
+      tag.pending = false;
+      tagToLink.pending = true;
+      // We only link the tag
+      this.phototagService.linkTagToPhoto(tagToLink.id, this.photoId).subscribe (
+        success => {
+          this.photoTags.push(tagToLink);
+          tagToLink.pending = false;
+        }, error => {
+          tagToLink.pending = false;
+          this.log.emit({module: 'tb-phototag-lib', type: 'error', message_fr: `Impossible de lier le tag "${tag.name}" à votre photo`});
+        }
+      );
+    } else {
+      // We first create the tag and the link it
+      this.phototagService.createTag(tag.name, tag.path, tag.userId, this.photoId).subscribe(
+        successTag => {
+          tag.pending = false;
+          successTag.pending = true;
+          this.userTags.push(successTag);
+          // link
+          this.phototagService.linkTagToPhoto(successTag.id, this.photoId).subscribe(
+            success => {
+              this.photoTags.push(successTag);
+              tag.pending = false;
+              successTag.pending = false;
+            },
+            error => {
+              successTag.pending = false;
+              this.log.emit({module: 'tb-phototag-lib', type: 'error', message_fr: `Impossible de lier le tag "${tag.name}" à votre photo`});
+            }
+          );
+        }, error => {
+          tag.pending = false;
+          this.log.emit({module: 'tb-phototag-lib', type: 'error', message_fr: `Impossible de créer le tag "${tag.name}"`});
+        }
+      );
+    }
+  }
+
   toggleTree() {
     this.showTree = !this.showTree;
   }
@@ -147,7 +208,7 @@ export class TbPhototagComponent implements OnInit {
   basicTagAlreadyUsed(tag: PhotoTag): boolean {
     if (this.photoTags.length > 0) {
       for (const _tag of this.photoTags) {
-        if (tag.name === _tag.name) { return true; }
+        if (tag.name === _tag.name && tag.path === _tag.path) { return true; }
       }
     }
     return false;
