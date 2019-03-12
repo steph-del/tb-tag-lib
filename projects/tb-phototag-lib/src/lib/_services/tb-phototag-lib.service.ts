@@ -114,7 +114,7 @@ export class TbPhototagLibService {
       'accept': 'application/json'
     };
 
-    return this.http.get(`${this.baseApiUrl}${this.apiRetrievePath.replace('{id', photoId.toString())}`, {headers})
+    return this.http.get(`${this.baseApiUrl}${this.apiRetrievePath.replace('{id}', photoId.toString())}`, {headers})
     .pipe(
       map(results => results as Array<any>),
       map(results => {
