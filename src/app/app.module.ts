@@ -2,7 +2,7 @@ import { BrowserModule } from '@angular/platform-browser';
 import { NgModule } from '@angular/core';
 
 import { AppComponent } from './app.component';
-import { TbPhototagLibModule } from 'tb-phototag-lib';
+import { TbTagLibModule } from 'tb-tag-lib';
 
 @NgModule({
   declarations: [
@@ -10,7 +10,7 @@ import { TbPhototagLibModule } from 'tb-phototag-lib';
   ],
   imports: [
     BrowserModule,
-    TbPhototagLibModule
+    TbTagLibModule
   ],
   providers: [],
   bootstrap: [AppComponent]

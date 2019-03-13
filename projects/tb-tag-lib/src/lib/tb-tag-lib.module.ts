@@ -5,8 +5,8 @@ import { ReactiveFormsModule } from '@angular/forms';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { MatInputModule, MatAutocompleteModule, MatProgressSpinnerModule, MatChipsModule, MatIconModule, MatDialogModule, MatButtonModule, MatMenuModule } from '@angular/material';
 
-import { TbPhototagTreeLibComponent } from './tree/tb-phototag-tree.component';
-import { TbPhototagComponent } from './phototag/tb-phototag.component';
+import { TbTagTreeComponent } from './tree/tb-tag-tree.component';
+import { TbTagComponent } from './tag/tb-tag.component';
 import { TreeModule } from 'angular-tree-component';
 
 import { TreeService } from './_services/tb-tree.service';
@@ -20,10 +20,10 @@ import { TreeService } from './_services/tb-tree.service';
     TreeModule.forRoot(),
     MatInputModule, MatAutocompleteModule, MatProgressSpinnerModule, MatChipsModule, MatIconModule, MatDialogModule, MatButtonModule, MatMenuModule
   ],
-  declarations: [TbPhototagTreeLibComponent, TbPhototagComponent],
-  exports: [TbPhototagTreeLibComponent, TbPhototagComponent]
+  declarations: [TbTagTreeComponent, TbTagComponent],
+  exports: [TbTagTreeComponent, TbTagComponent]
 })
-export class TbPhototagLibModule {
+export class TbTagLibModule {
   providers: [
     TreeService
   ];

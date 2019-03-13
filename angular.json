@@ -3,7 +3,7 @@
   "version": 1,
   "newProjectRoot": "projects",
   "projects": {
-    "tb-phototag-lib-app": {
+    "tb-tag-lib-app": {
       "root": "",
       "sourceRoot": "src",
       "projectType": "application",
@@ -13,7 +13,7 @@
         "build": {
           "builder": "@angular-devkit/build-angular:browser",
           "options": {
-            "outputPath": "dist/tb-phototag-lib-app",
+            "outputPath": "dist/tb-tag-lib-app",
             "index": "src/index.html",
             "main": "src/main.ts",
             "polyfills": "src/polyfills.ts",
@@ -50,18 +50,18 @@
         "serve": {
           "builder": "@angular-devkit/build-angular:dev-server",
           "options": {
-            "browserTarget": "tb-phototag-lib-app:build"
+            "browserTarget": "tb-tag-lib-app:build"
           },
           "configurations": {
             "production": {
-              "browserTarget": "tb-phototag-lib-app:build:production"
+              "browserTarget": "tb-tag-lib-app:build:production"
             }
           }
         },
         "extract-i18n": {
           "builder": "@angular-devkit/build-angular:extract-i18n",
           "options": {
-            "browserTarget": "tb-phototag-lib-app:build"
+            "browserTarget": "tb-tag-lib-app:build"
           }
         },
         "test": {
@@ -95,7 +95,7 @@
         }
       }
     },
-    "tb-phototag-lib-app-e2e": {
+    "tb-tag-lib-app-e2e": {
       "root": "e2e/",
       "projectType": "application",
       "architect": {
@@ -103,11 +103,11 @@
           "builder": "@angular-devkit/build-angular:protractor",
           "options": {
             "protractorConfig": "e2e/protractor.conf.js",
-            "devServerTarget": "tb-phototag-lib-app:serve"
+            "devServerTarget": "tb-tag-lib-app:serve"
           },
           "configurations": {
             "production": {
-              "devServerTarget": "tb-phototag-lib-app:serve:production"
+              "devServerTarget": "tb-tag-lib-app:serve:production"
             }
           }
         },
@@ -122,38 +122,38 @@
         }
       }
     },
-    "tb-phototag-lib": {
-      "root": "projects/tb-phototag-lib",
-      "sourceRoot": "projects/tb-phototag-lib/src",
+    "tb-tag-lib": {
+      "root": "projects/tb-tag-lib",
+      "sourceRoot": "projects/tb-tag-lib/src",
       "projectType": "library",
-      "prefix": "tb-phototag",
+      "prefix": "tb-tag",
       "architect": {
         "build": {
           "builder": "@angular-devkit/build-ng-packagr:build",
           "options": {
-            "tsConfig": "projects/tb-phototag-lib/tsconfig.lib.json",
-            "project": "projects/tb-phototag-lib/ng-package.json"
+            "tsConfig": "projects/tb-tag-lib/tsconfig.lib.json",
+            "project": "projects/tb-tag-lib/ng-package.json"
           },
           "configurations": {
             "production": {
-              "project": "projects/tb-phototag-lib/ng-package.prod.json"
+              "project": "projects/tb-tag-lib/ng-package.prod.json"
             }
           }
         },
         "test": {
           "builder": "@angular-devkit/build-angular:karma",
           "options": {
-            "main": "projects/tb-phototag-lib/src/test.ts",
-            "tsConfig": "projects/tb-phototag-lib/tsconfig.spec.json",
-            "karmaConfig": "projects/tb-phototag-lib/karma.conf.js"
+            "main": "projects/tb-tag-lib/src/test.ts",
+            "tsConfig": "projects/tb-tag-lib/tsconfig.spec.json",
+            "karmaConfig": "projects/tb-tag-lib/karma.conf.js"
           }
         },
         "lint": {
           "builder": "@angular-devkit/build-angular:tslint",
           "options": {
             "tsConfig": [
-              "projects/tb-phototag-lib/tsconfig.lib.json",
-              "projects/tb-phototag-lib/tsconfig.spec.json"
+              "projects/tb-tag-lib/tsconfig.lib.json",
+              "projects/tb-tag-lib/tsconfig.spec.json"
             ],
             "exclude": [
               "**/node_modules/**"
@@ -163,5 +163,5 @@
       }
     }
   },
-  "defaultProject": "tb-phototag-lib-app"
+  "defaultProject": "tb-tag-lib-app"
 }

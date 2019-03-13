@@ -1,4 +1,4 @@
-<div class="photo-tag-container">
+<div class="tag-container">
   <p *ngIf="basicTagsByCategory.length > 0"><b>Tags suggérés</b></p>
   <div *ngFor="let cat of basicTagsByCategory" class="basicTagsByCategories">
     <div class="category">{{ cat[0].path }}</div>
@@ -36,9 +36,9 @@
   <button mat-raised-button (click)="toggleTree()">Gérer mes tags</button>
 
   <div class="tagsTree" *ngIf="showTree">
-    <tb-phototag-tree
-      [photoId]="photoId"
+    <tb-tag-tree
+      [objectId]="objectId"
       (tagsHasChanged)="getTags(userId)"
-      (log)="_log($event)"></tb-phototag-tree>
+      (log)="_log($event)"></tb-tag-tree>
   </div>
 </div>

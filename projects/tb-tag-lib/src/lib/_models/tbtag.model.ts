@@ -1,8 +1,8 @@
-export interface PhotoTag {
+export interface TbTag {
   id: number;
   userId: number;
   name: string;
   path: string;
-  photoId?: number;
+  objectId?: number;
   pending?: boolean;
 }

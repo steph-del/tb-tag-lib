@@ -4,13 +4,13 @@
         "directive-selector": [
             true,
             "attribute",
-            "tb-phototag",
+            "tb-tag",
             "camelCase"
         ],
         "component-selector": [
             true,
             "element",
-            "tb-phototag",
+            "tb-tag",
             "kebab-case"
         ]
     }

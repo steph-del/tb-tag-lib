@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 
 import { TreeItem } from '../_models/tree-item.model';
-import { PhotoTag } from '../_models/phototag.model';
+import { TbTag } from '../_models/tbtag.model';
 
 @Injectable({
   providedIn: 'root'
@@ -137,7 +137,7 @@ export class TreeService {
   /**
   * Add a tag into the tree
   */
-  placeTag(tag: PhotoTag, tree: Array<any>, _isEditable: boolean = true): any {
+  placeTag(tag: TbTag, tree: Array<any>, _isEditable: boolean = true): any {
     let path: string = tag.path;
     let tagName: string = tag.name;
 

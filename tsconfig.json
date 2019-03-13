@@ -17,11 +17,11 @@
       "dom"
     ],
     "paths": {
-      "tb-phototag-lib": [
-        "dist/tb-phototag-lib"
+      "tb-tag-lib": [
+        "dist/tb-tag-lib"
       ],
-      "tb-phototag-lib/*": [
-        "dist/tb-phototag-lib/*"
+      "tb-tag-lib/*": [
+        "dist/tb-tag-lib/*"
       ]
     }
   }

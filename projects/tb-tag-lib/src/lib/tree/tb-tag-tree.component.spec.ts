@@ -1,20 +1,20 @@
 import { async, ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { TbPhototagComponent } from './tb-phototag.component';
+import { TbTagTreeComponent } from './tb-tag-tree.component';
 
-describe('TbPhototagComponent', () => {
-  let component: TbPhototagComponent;
-  let fixture: ComponentFixture<TbPhototagComponent>;
+describe('TbTagTreeLibComponent', () => {
+  let component: TbTagTreeComponent;
+  let fixture: ComponentFixture<TbTagTreeComponent>;
 
   beforeEach(async(() => {
     TestBed.configureTestingModule({
-      declarations: [ TbPhototagComponent ]
+      declarations: [ TbTagTreeComponent ]
     })
     .compileComponents();
   }));
 
   beforeEach(() => {
-    fixture = TestBed.createComponent(TbPhototagComponent);
+    fixture = TestBed.createComponent(TbTagTreeComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });

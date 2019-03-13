@@ -1,5 +1,5 @@
 {
-  "name": "tb-phototag-lib-app",
+  "name": "tb-tag-lib-app",
   "version": "0.0.0",
   "scripts": {
     "ng": "ng",
@@ -8,10 +8,10 @@
     "test": "ng test",
     "lint": "ng lint",
     "e2e": "ng e2e",
-    "build_serve": "ng build --prod tb-phototag-lib && ng serve",
-    "build_lib": "ng build --prod tb-phototag-lib",
-    "npm_pack": "cd dist/tb-phototag-lib && npm pack",
-    "build_pack": "ng build --prod tb-phototag-lib && npm run npm_pack"
+    "build_serve": "ng build --prod tb-tag-lib && ng serve",
+    "build_lib": "ng build --prod tb-tag-lib",
+    "npm_pack": "cd dist/tb-tag-lib && npm pack",
+    "build_pack": "ng build --prod tb-tag-lib && npm run npm_pack"
   },
   "private": true,
   "dependencies": {

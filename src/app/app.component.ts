@@ -1,7 +1,7 @@
 import { Component } from '@angular/core';
 
-import { PhotoTag } from 'projects/tb-phototag-lib/src/lib/_models/phototag.model';
-import { TbLog } from 'projects/tb-phototag-lib/src/lib/_models/tb-log.model';
+import { TbTag } from 'projects/tb-tag-lib/src/lib/_models/tbtag.model';
+import { TbLog } from 'projects/tb-tag-lib/src/lib/_models/tb-log.model';
 
 @Component({
   selector: 'app-root',
@@ -10,7 +10,7 @@ import { TbLog } from 'projects/tb-phototag-lib/src/lib/_models/tb-log.model';
 })
 export class AppComponent {
 
-  public basicTags = [
+  public basicTags = [/*
     {path: 'Organes', name: 'Fleur', id: null, userId: null},
     {path: 'Organes', name: 'Feuille', id: null, userId: null},
     {path: 'Organes', name: 'Fruit', id: null, userId: null},
@@ -25,7 +25,7 @@ export class AppComponent {
     {path: 'Photo', name: 'Planche', id: null, userId: null},
     {path: 'Photo', name: 'Dessin', id: null, userId: null},
     {path: 'Morphologie', name: 'Plantule', id: null, userId: null},
-    {path: 'Morphologie', name: 'Rosette', id: null, userId: null},
+    {path: 'Morphologie', name: 'Rosette', id: null, userId: null},*/
   ];
 
   log(log: TbLog) {
