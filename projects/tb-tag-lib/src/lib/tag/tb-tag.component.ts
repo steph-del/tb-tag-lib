@@ -32,6 +32,7 @@ export class TbTagComponent implements OnInit {
   }
 
   @Output() log = new EventEmitter<TbLog>();
+  @Output() httpError = new EventEmitter<any>();
 
   _basicTags: Array<TbTag> = [];
   basicTagsByCategory: Array<Array<TbTag>> = [];
@@ -69,7 +70,9 @@ export class TbTagComponent implements OnInit {
       result => {
         this.objTgs = result['value'];
       },
-      error => console.log(error)
+      error => {
+        this.httpError.next(error);
+      }
     );
 
     // Get tags
@@ -89,6 +92,7 @@ export class TbTagComponent implements OnInit {
       this.isLoadingBasicTags = false;
       this.basicTags = _tags;
     }, error => {
+      this.httpError.next(error);
       this.isLoadingBasicTags = false;
       this.log.emit({module: 'tb-tag-lib', type: 'error', message_fr: `Les tags par défaut n'ont pas pu être chargés`});
     });
@@ -121,6 +125,7 @@ export class TbTagComponent implements OnInit {
           tag.pending = false;
         },
         error => {
+          this.httpError.next(error);
           tag.pending = false;
           this.log.emit({module: 'tb-tag-lib', type: 'error', message_fr: `Impossible de lier le tag "${tag.name}" à votre photo`});
         }
@@ -140,6 +145,7 @@ export class TbTagComponent implements OnInit {
           i++;
         });
       }, error => {
+        this.httpError.next(error);
         this.log.emit({module: 'tb-tag-lib', type: 'error', message_fr: `Impossible de supprimer le lien entre le tag "${tag.name}" et votre photo`});
       }
     );
@@ -168,6 +174,7 @@ export class TbTagComponent implements OnInit {
           this.objTgs.push(tagToLink);
           tagToLink.pending = false;
         }, error => {
+          this.httpError.next(error);
           tagToLink.pending = false;
           this.log.emit({module: 'tb-tag-lib', type: 'error', message_fr: `Impossible de lier le tag "${tag.name}" à votre photo`});
         }
@@ -187,11 +194,13 @@ export class TbTagComponent implements OnInit {
               successTag.pending = false;
             },
             error => {
+              this.httpError.next(error);
               successTag.pending = false;
               this.log.emit({module: 'tb-tag-lib', type: 'error', message_fr: `Impossible de lier le tag "${tag.name}" à votre photo`});
             }
           );
         }, error => {
+          this.httpError.next(error);
           tag.pending = false;
           this.log.emit({module: 'tb-tag-lib', type: 'error', message_fr: `Impossible de créer le tag "${tag.name}"`});
         }
