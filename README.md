@@ -43,6 +43,7 @@ Exemple d'utilisation :
 | apiRelationPath           | Oui    | string            |         | '/api/photo_photo_tag_relations'       | chemin d'accès API vers la relation object <-> tag |
 | apiRetrievePath           | Oui    | string            |         | '/api/photos/{id}/photo_tag_relations' | chemin d'accès API pour récupérer les relations afférentes à l'objet. `{id}` est automatiquement remplacé (conserver tel quel dans le paramètre). |
 | basicTags                 | Non    | `[TagModel]`      |         | /                                      | liste de tags par défaut à afficher à l'utilisateur |
+| noApiCall                 | Non    | boolean           |         | false                                  | ne pas effectuer les appels aux API. S'utilise de concert avec un `objectId === null` |
 
 
 ### Paramètres en sortie @Output
@@ -50,6 +51,9 @@ Exemple d'utilisation :
 | Propriété          | Valeur(s)                     | Remarque |
 | ---                | ---                           | ---         |
 | log                | TbLogModel                    | revoie tous les évènements utiles pour l'utilisateur ou pour le déboguage |
+| httpError          | -                             | renvoie les erreurs Http le cas échéant |
+| newTag             | TbTagModel                    | évènement émis lors de la création d'un nouveau tag SI `noApiCall === true` ET `objectId === null` |
+| removedTag         | TbTagModel                    | évènement émis lors de la suppression d'un tag SI `noApiCall === true` ET `objectId === null` |
 
 
 TbLogModel :

@@ -20,6 +20,7 @@ export class TbTagComponent implements OnInit {
   @Input() userId: number;
   @Input() objectId: number;
   @Input() baseApiUrl = 'http://localhost:8000';
+  @Input() noApiCall = false;
   @Input() objectName = 'photo';
   @Input() objectEndpoint = '/api/photos';
   @Input() tagName = 'photoTag';
@@ -31,6 +32,8 @@ export class TbTagComponent implements OnInit {
     this.tagService.setBasicTags(data);
   }
 
+  @Output() newTag = new EventEmitter<TbTag>();
+  @Output() removedTag = new EventEmitter<TbTag>();
   @Output() log = new EventEmitter<TbLog>();
   @Output() httpError = new EventEmitter<any>();
 
@@ -51,7 +54,7 @@ export class TbTagComponent implements OnInit {
 
   ngOnInit() {
     // objectId provided ?
-    if (!this.objectId) {
+    if (!this.objectId && !this.noApiCall) {
       this.log.emit({module: 'tb-tag-lib', type: 'error', message_fr: 'Vous devez fournir un objectId pour initialiser le module'});
     }
     // Set API urls
@@ -65,15 +68,17 @@ export class TbTagComponent implements OnInit {
     // Set userId available
     this.treeService.setUserId(this.userId);
 
-    // get photo tags
-    this.tagService.getObjTags(this.objectId).subscribe(
-      result => {
-        this.objTgs = result['value'];
-      },
-      error => {
-        this.httpError.next(error);
-      }
-    );
+    // get object (ie photo) tags
+    if (this.objectId) {
+      this.tagService.getObjTags(this.objectId).subscribe(
+        result => {
+          this.objTgs = result['value'];
+        },
+        error => {
+          this.httpError.next(error);
+        }
+      );
+    }
 
     // Get tags
     this.getTags(this.userId);
@@ -116,7 +121,7 @@ export class TbTagComponent implements OnInit {
    * When user select a tag, link it to the photo and emit the tag
    */
   linkTag(tag: TbTag): void {
-    if (!this.basicTagAlreadyUsed(tag) || !this.userTagAlreadyUsed(tag)) {
+    if (this.objectId && (!this.basicTagAlreadyUsed(tag) || !this.userTagAlreadyUsed(tag))) {
       tag.pending = true;
       this.tagService.linkTagToObject(tag.id, this.objectId).subscribe(
         success => {
@@ -130,6 +135,9 @@ export class TbTagComponent implements OnInit {
           this.log.emit({module: 'tb-tag-lib', type: 'error', message_fr: `Impossible de lier le tag "${tag.name}" à votre photo`});
         }
       );
+    } else if (!this.objectId && this.noApiCall) {
+      this.objTgs.push(tag);
+      this.newTag.next(tag);
     }
   }
 
@@ -137,18 +145,27 @@ export class TbTagComponent implements OnInit {
    * When user unselect a tag, unlink it to the photo and emit the tag
    */
   unlinkTag(tag: TbTag): void {
-    this.tagService.unlinkTagToObject(tag.id, this.objectId).subscribe(
-      success => {
-        let i = 0;
-        this.objTgs.forEach(objTag => {
-          if (objTag.id === tag.id) { this.objTgs.splice(i, 1); }
-          i++;
-        });
-      }, error => {
-        this.httpError.next(error);
-        this.log.emit({module: 'tb-tag-lib', type: 'error', message_fr: `Impossible de supprimer le lien entre le tag "${tag.name}" et votre photo`});
-      }
-    );
+    if (this.objectId) {
+      this.tagService.unlinkTagToObject(tag.id, this.objectId).subscribe(
+        success => {
+          let i = 0;
+          this.objTgs.forEach(objTag => {
+            if (objTag.id === tag.id) { this.objTgs.splice(i, 1); }
+            i++;
+          });
+        }, error => {
+          this.httpError.next(error);
+          this.log.emit({module: 'tb-tag-lib', type: 'error', message_fr: `Impossible de supprimer le lien entre le tag "${tag.name}" et votre photo`});
+        }
+      );
+    } else if (!this.objectId && this.noApiCall) {
+      let i = 0;
+      this.objTgs.forEach(objTag => {
+        if (objTag.name === tag.name && objTag.path === tag.path) { this.objTgs.splice(i, 1); }
+        i++;
+      });
+      this.removedTag.next(tag);
+    }
   }
 
   /**
@@ -165,7 +182,7 @@ export class TbTagComponent implements OnInit {
       if (uTag.name === tag.name && uTag.path === tag.path) { alreadyExistInDb = true; tagToLink = uTag; }
     }
 
-    if (alreadyExistInDb) {
+    if (this.objectId && alreadyExistInDb) {
       tag.pending = false;
       tagToLink.pending = true;
       // We only link the tag
@@ -179,7 +196,7 @@ export class TbTagComponent implements OnInit {
           this.log.emit({module: 'tb-tag-lib', type: 'error', message_fr: `Impossible de lier le tag "${tag.name}" à votre photo`});
         }
       );
-    } else {
+    } else if (this.objectId && !alreadyExistInDb) {
       // We first create the tag and the link it
       this.tagService.createTag(tag.name, tag.path, tag.userId, this.objectId).subscribe(
         successTag => {
@@ -206,6 +223,26 @@ export class TbTagComponent implements OnInit {
         }
       );
     }
+  }
+
+  newTagFromTree(tag: TbTag) {
+    this.objTgs.push(tag);
+    this.userTags.push(tag);
+    this.newTag.next(tag);
+  }
+
+  removedTagFromTree(tag: TbTag) {
+    let i = 0;
+    this.objTgs.forEach(objTag => {
+      if (objTag.objectId === tag.objectId) { this.objTgs.splice(i, 1); }
+      i++;
+    });
+    let j = 0;
+    this.userTags.forEach(userTag => {
+      if (userTag.objectId === tag.objectId) { this.userTags.splice(j, 1); }
+      j++;
+    });
+    this.removedTag.next(tag);
   }
 
   toggleTree() {
@@ -236,6 +273,10 @@ export class TbTagComponent implements OnInit {
     } else {
       return 'none';
     }
+  }
+
+  treeComponentHttpError(error: any) {
+    this.httpError.next(error);
   }
 
   /**

@@ -21,8 +21,12 @@ export class TbTagTreeComponent implements OnInit {
   // INPUT / OUTPUT
   //
   @Input() objectId: number;
+  @Input() noApiCall = false;
   @Output() log = new EventEmitter<TbLog>();
   @Output() tagsHasChanged = new EventEmitter<boolean>();
+  @Output() httpError = new EventEmitter<any>();
+  @Output() _newTag = new EventEmitter<TbTag>();
+  @Output() _removedTag = new EventEmitter<TbTag>();
 
   //
   // VARIABLES
@@ -64,24 +68,37 @@ export class TbTagTreeComponent implements OnInit {
   moveNode(event) {
     const movedNode: TreeItem = event.node;
     const movedInto: TreeItem = event.to.parent;
-    if (movedNode.isFolder) {
+    if (this.objectId && movedNode.isFolder) {
       // update all paths
       this.tagService.rewriteTagsPaths(movedNode.path + ' / ' + movedNode.name, movedInto.path + ' / ' + movedInto.name + ' / ' + movedNode.name);
-    } else if (movedNode.isLeaf) {
+    } else if (this.objectId && movedNode.isLeaf) {
       // update movedNode path
       const newPath = movedInto.path === '' ? movedInto.name : movedInto.path + ' / ' + movedInto.name;
       // update node
-      this.tagService.updateTag({id: movedNode.id, userId: this.userId, name: movedNode.name, path: newPath, objectId: this.objectId})
-      .subscribe(result => {
-        this.log.emit({module: 'tb-tag-lib', type: 'info', message_fr: `Le tag "${movedNode.name}" a bien été déplacé et enregistré`});
-      }, error => {
-        // reset tree
-        this.resetTree();
-        this.log.emit({module: 'tb-tag-lib', type: 'error', message_fr: `Le tag "${movedNode.name}" n'a pas pu être déplacé et enregistré`});
-      });
+      if (this.objectId && !this.noApiCall) {
+        this.tagService.updateTag({id: movedNode.id, userId: this.userId, name: movedNode.name, path: newPath, objectId: this.objectId})
+        .subscribe(result => {
+          this.log.emit({module: 'tb-tag-lib', type: 'info', message_fr: `Le tag "${movedNode.name}" a bien été déplacé et enregistré`});
+        }, error => {
+          // reset tree
+          this.httpError.next(error);
+          this.resetTree();
+          this.log.emit({module: 'tb-tag-lib', type: 'error', message_fr: `Le tag "${movedNode.name}" n'a pas pu être déplacé et enregistré`});
+        });
+      }
+    } else if (!this.objectId && this.noApiCall) {
+      const newPath = movedInto.path === '' ? movedInto.name : movedInto.path + ' / ' + movedInto.name;
+      const newId = - Math.random() * 100000;
+      const tagToRemove: TbTag = {id: event.node.id, userId: this.userId, name: movedNode.name, path: movedNode.path, objectId: event.node.id};
+      const newTag: TbTag = {id: newId, userId: this.userId, name: movedNode.name, path: newPath, objectId: newId};
+
+      movedNode.id = newId;
+
+      this._removedTag.next(tagToRemove);
+      this._newTag.next(newTag);
     }
 
-    this.tagsHasChanged.emit(true);
+    if (this.objectId && !this.noApiCall) { this.tagsHasChanged.emit(true); }
   }
 
   /**
@@ -107,7 +124,7 @@ export class TbTagTreeComponent implements OnInit {
       this.tagService.rewriteTagsPaths(node.data.path + ' / ' + node.data.name, node.data.path + ' / ' + newName);
       // update node name
       node.data.name = newName;
-    } else if (node.data.isLeaf) {
+    } else if (this.objectId && node.data.isLeaf) {
       // update tag
       const tag: TbTag = {id: node.data.id, userId: node.data.userId, path: node.data.path, name: newName, objectId: this.objectId};
       this.tagService.updateTag(tag).subscribe(resultTag => {
@@ -115,8 +132,27 @@ export class TbTagTreeComponent implements OnInit {
         node.data.name = newName;
         this.tagsHasChanged.emit(true);
       }, error => {
+        this.httpError.next(error);
         this.log.emit({module: 'tb-tag-lib', type: 'error', message_fr: `Le tag "${tag.name}" n'a pas pu être enregistré`});
       });
+    } else if (!this.objectId && this.noApiCall) {
+      if (node.data.isFolder) {
+        // update tag all leaves tags inside the folder
+        this.tagService.rewriteTagsPaths(node.data.path + ' / ' + node.data.name, node.data.path + ' / ' + newName);
+      } else if (node.data.isLeaf) {
+
+      // update tag
+      const newId = - Math.random() * 100000;
+      const tagToRemove: TbTag = {id: node.data.id, userId: this.userId, name: node.data.name, path: node.data.path, objectId: node.data.id};
+      const newTag: TbTag = {id: newId, userId: this.userId, name: newName, path: node.data.path, objectId: newId};
+
+      // update tag name
+      node.data.name = newName;
+      node.data.id = newId;
+
+      this._removedTag.next(tagToRemove);
+      this._newTag.next(newTag);
+      }
     }
   }
 
@@ -131,10 +167,31 @@ export class TbTagTreeComponent implements OnInit {
       return;
     }
 
-    const tag: TbTag = {id: node.data.id, userId: node.data.userId, name: node.data.name, path: node.data.path, objectId: this.objectId};
-    // delete object tag...
-    this.tagService.removeTag(tag).subscribe(success => {
-      // and then, remove node from tree
+    if (this.objectId) {
+      const tag: TbTag = {id: node.data.id, userId: node.data.userId, name: node.data.name, path: node.data.path, objectId: this.objectId};
+      // delete object tag...
+      this.tagService.removeTag(tag).subscribe(success => {
+        // and then, remove node from tree
+        const treeNodeToRemove: TreeNode = this.treeComponent.treeModel.getNodeById(node.data.id);
+        const parentTreeNodeToRemove: TreeNode = treeNodeToRemove.parent;
+        let i = 0;
+        let j: number = null;
+        parentTreeNodeToRemove.data.children.forEach(tntr => {
+          if (tntr.id === node.data.id) { j = i; }
+          i++;
+        });
+        if (j !== null) { parentTreeNodeToRemove.data.children.splice(j, 1); }
+        this.treeComponent.treeModel.update();
+        this.log.emit({module: 'tb-tag-lib', type: 'info', message_fr: `Le tag "${tag.name}" a bien été supprimé`});
+      }, error => {
+        this.httpError.next(error);
+        this.log.emit({module: 'tb-tag-lib', type: 'error', message_fr: `Impossible de supprimer le tag "${tag.name}"`});
+      });
+
+      this.tagsHasChanged.emit(true);
+    } else if (!this.objectId && this.noApiCall) {
+      const tag: TbTag = {id: null, userId: node.data.userId, name: node.data.name, path: node.data.path, objectId: null};
+      // remove tag from tree
       const treeNodeToRemove: TreeNode = this.treeComponent.treeModel.getNodeById(node.data.id);
       const parentTreeNodeToRemove: TreeNode = treeNodeToRemove.parent;
       let i = 0;
@@ -145,12 +202,9 @@ export class TbTagTreeComponent implements OnInit {
       });
       if (j !== null) { parentTreeNodeToRemove.data.children.splice(j, 1); }
       this.treeComponent.treeModel.update();
-      this.log.emit({module: 'tb-tag-lib', type: 'info', message_fr: `Le tag "${tag.name}" a bien été supprimé`});
-    }, error => {
-      this.log.emit({module: 'tb-tag-lib', type: 'error', message_fr: `Impossible de supprimer le tag "${tag.name}"`});
-    });
-
-    this.tagsHasChanged.emit(true);
+      // emit removed tag
+      this._removedTag.next(tag);
+    }
   }
 
   /**
@@ -160,7 +214,7 @@ export class TbTagTreeComponent implements OnInit {
     node.data.isEditing = true;
     this.treeComponent.treeModel.update();
 
-    this.tagsHasChanged.emit(true);
+    if (this.objectId && !this.noApiCall) { this.tagsHasChanged.emit(true); }
   }
 
   /**
@@ -173,18 +227,30 @@ export class TbTagTreeComponent implements OnInit {
     } else {
       name = data;
     }
-    this.tagService.createTag(name, 'Mes tags', this.userId, this.objectId).subscribe(tag => {
+    if (this.objectId) {
+      this.tagService.createTag(name, 'Mes tags', this.userId, this.objectId).subscribe(tag => {
+        this.treeService.growTree(tag.path, this.tree);
+        this.treeService.placeTag(tag, this.tree);
+        this.treeComponent.treeModel.update();
+        const nodeToExpand: TreeNode = this.treeComponent.treeModel.getNodeById(tag.id);
+        nodeToExpand.parent.expand();
+        this.log.emit({module: 'tb-tag-lib', type: 'info', message_fr: `Le tag "${tag.name}" a bien été créé`});
+      }, error => {
+        this.httpError.next(error);
+        this.log.emit({module: 'tb-tag-lib', type: 'error', message_fr: `Impossible de créer le tag "${name}"`});
+      });
+      this.tagsHasChanged.emit(true);
+      this.form.controls.tagInput.setValue('', {emitEvent: false});
+    } else if (!this.objectId && this.noApiCall) {
+      const tempId = - Math.random() * 100000;
+      const tag: TbTag = {id: tempId, userId: this.userId, name: name, path: 'Mes tags', objectId: tempId};
       this.treeService.growTree(tag.path, this.tree);
       this.treeService.placeTag(tag, this.tree);
       this.treeComponent.treeModel.update();
       const nodeToExpand: TreeNode = this.treeComponent.treeModel.getNodeById(tag.id);
       nodeToExpand.parent.expand();
-      this.log.emit({module: 'tb-tag-lib', type: 'info', message_fr: `Le tag "${tag.name}" a bien été créé`});
-    }, error => {
-      this.log.emit({module: 'tb-tag-lib', type: 'error', message_fr: `Impossible de créer le tag "${name}"`});
-    });
-    this.tagsHasChanged.emit(true);
-    this.form.controls.tagInput.setValue('', {emitEvent: false});
+      this._newTag.next(tag);
+    }
   }
 
   /**

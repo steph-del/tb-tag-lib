@@ -40,4 +40,16 @@ export class AppComponent {
       console.error(log.message_fr);
     }
   }
+
+  newTag(tag: TbTag) {
+    console.log('New tag (not registered in db)', tag);
+  }
+
+  removedTag(tag: TbTag) {
+    console.log('Deleted tag (not registered in db)', tag);
+  }
+
+  updatedTag(tag: TbTag) {
+    console.log('Updated tag (not registered in db)', tag);
+  }
 }

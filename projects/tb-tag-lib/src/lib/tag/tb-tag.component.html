@@ -38,6 +38,10 @@
   <div class="tagsTree" *ngIf="showTree">
     <tb-tag-tree
       [objectId]="objectId"
+      [noApiCall]="noApiCall"
+      (httpError)="treeComponentHttpError($event)"
+      (_newTag)="newTagFromTree($event)"
+      (_removedTag)="removedTagFromTree($event)"
       (tagsHasChanged)="getTags(userId)"
       (log)="_log($event)"></tb-tag-tree>
   </div>
