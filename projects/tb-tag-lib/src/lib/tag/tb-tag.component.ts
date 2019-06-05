@@ -28,6 +28,7 @@ export class TbTagComponent implements OnInit {
   @Input() apiRelationPath = '/api/photo_photo_tag_relations';
   @Input() apiRetrievePath = '/api/photos/{id}/photo_tag_relations';
   @Input() set basicTags(data: Array<TbTag>) {
+    this.basicTagsSet = true;
     this._basicTags = data;
     this.tagService.setBasicTags(data);
   }
@@ -39,6 +40,7 @@ export class TbTagComponent implements OnInit {
 
   _basicTags: Array<TbTag> = [];
   basicTagsByCategory: Array<Array<TbTag>> = [];
+  basicTagsSet = false;
   userTags: Array<TbTag> = [];
   objTgs: Array<TbTag> = [];
   filteredUserTags: Observable<TbTag[]>;
@@ -57,6 +59,9 @@ export class TbTagComponent implements OnInit {
     if (!this.objectId && !this.noApiCall) {
       this.log.emit({module: 'tb-tag-lib', type: 'error', message_fr: 'Vous devez fournir un objectId pour initialiser le module'});
     }
+
+    if (!this.basicTagsSet) { this.tagService.setBasicTags([]); }
+
     // Set API urls
     this.tagService.setBaseApiUrl(this.baseApiUrl);
     this.tagService.setApiRelationPath(this.apiRelationPath);
