@@ -9,7 +9,7 @@
         [formControl]="form.controls.tagInput"
         (keydown.enter)="newTag($event)">
     </mat-form-field>
-    <button mat-icon-button (click)="newTag(inputTag.value)">
+    <button type="button" mat-icon-button (click)="$event.preventDefault(); newTag(inputTag.value)">
       <mat-icon aria-label="Créer un tag">check</mat-icon>
     </button>
   </div>
@@ -24,7 +24,7 @@
         [formControl]="form.controls.folderInput"
         (keydown.enter)="newFolder($event)">
     </mat-form-field>
-    <button mat-icon-button (click)="newFolder(inputFolder.value)">
+    <button type="button" mat-icon-button (click)="$event.preventDefault(); newFolder(inputFolder.value)">
       <mat-icon aria-label="Créer un dossier">check</mat-icon>
     </button>
   </div>
