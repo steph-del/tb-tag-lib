@@ -22,10 +22,13 @@ export class TreeService {
   growTree(path: string, tree: Array<any>, _isEditable: boolean = true): any {
     // replace several spaces
     path = path.replace(/\s\s+/g, ' ');
-    path = path.replace(' / ', '/');
+
+    // remove first slash
+    path = path.slice(1, path.length);
 
     // get separate path tags
-    const tagsArray = path.split('/');
+    let tagsArray = path.split('/');
+    if (tagsArray.length === 1 && tagsArray[0] === '') { tagsArray = []; }
 
     // max depth = 4
     if (tagsArray.length > 4) {
@@ -60,12 +63,12 @@ export class TreeService {
         _parentTags = tagsArray[i - 1];
       // NOT first tag and parent tags already set
       } else if (i > 0 && _parentTags !== '') {
-        _parentTags = _parentTags + ' / ' + tagsArray[i - 1];
+        _parentTags = _parentTags + '/' + tagsArray[i - 1];
       }
 
 
       // first tag level
-      if (i === 0) {
+      if (i === 0 && tagsArray.length > 0) {
         let found = false;
         _tree.forEach(treeItem => {
           if (treeItem.name === tagsArray[0]) { i0 = j; found = true; }
@@ -143,8 +146,10 @@ export class TreeService {
 
     // replace several spaces
     path = path.replace(/\s\s+/g, ' ');
-    path = path.replace(' / ', '/');
     tagName = tagName.replace(/\s\s+/g, ' ').trim();
+
+    // remove first slash
+    path = path.slice(1, path.length);
 
     // get separate path tags
     const tagsArray = path.split('/');
@@ -188,19 +193,23 @@ export class TreeService {
 
     let ti: TreeItem;
 
-    // if (i0 === null) { ti = tree[0]; }
+    if (i0 === null) { ti = tree[0]; }
     if (i0 !== null && i1 === null && i2 === null && i3 === null) { ti = tree[i0]; }
     if (i0 !== null && i1 !== null && i2 === null && i3 === null) { ti = tree[i0].children[i1]; }
     if (i0 !== null && i1 !== null && i2 !== null && i3 === null) { ti = tree[i0].children[i1].children[i2]; }
     if (i0 !== null && i1 !== null && i2 !== null && i3 !== null) { ti = tree[i0].children[i1].children[i2].children[i3]; }
 
-    if (ti.path === '') {
+    if (ti.path === '' && tag.path !== '/') {
       ti.children.push(
+        {id: tag.id, userId: tag.userId, path: ti.name, isFolder: false, isLeaf: true, isEditing: false, isEditable: _isEditable, name: tagName, level: ti.level + 1, children: []}
+      );
+    } else if (ti.path === '' && tag.path === '/') {
+      tree.push(
         {id: tag.id, userId: tag.userId, path: ti.name, isFolder: false, isLeaf: true, isEditing: false, isEditable: _isEditable, name: tagName, level: ti.level + 1, children: []}
       );
     } else {
       ti.children.push(
-        {id: tag.id, userId: tag.userId, path: ti.path + ' / ' + ti.name, isFolder: false, isLeaf: true, isEditing: false, isEditable: _isEditable, name: tagName, level: ti.level + 1, children: []}
+        {id: tag.id, userId: tag.userId, path: ti.path + '/' + ti.name, isFolder: false, isLeaf: true, isEditing: false, isEditable: _isEditable, name: tagName, level: ti.level + 1, children: []}
       );
     }
 

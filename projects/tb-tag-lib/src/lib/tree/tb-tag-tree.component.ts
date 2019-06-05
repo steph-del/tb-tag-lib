@@ -70,10 +70,10 @@ export class TbTagTreeComponent implements OnInit {
     const movedInto: TreeItem = event.to.parent;
     if (this.objectId && movedNode.isFolder) {
       // update all paths
-      this.tagService.rewriteTagsPaths(movedNode.path + ' / ' + movedNode.name, movedInto.path + ' / ' + movedInto.name + ' / ' + movedNode.name);
+      this.tagService.rewriteTagsPaths(movedNode.path + '/' + movedNode.name, movedInto.path + '/' + movedInto.name + '/' + movedNode.name);
     } else if (this.objectId && movedNode.isLeaf) {
       // update movedNode path
-      const newPath = movedInto.path === '' ? movedInto.name : movedInto.path + ' / ' + movedInto.name;
+      const newPath = movedInto.path === '/' ? movedInto.name : movedInto.path + '/' + movedInto.name;
       // update node
       if (this.objectId && !this.noApiCall) {
         this.tagService.updateTag({id: movedNode.id, userId: this.userId, name: movedNode.name, path: newPath, objectId: this.objectId})
@@ -87,7 +87,7 @@ export class TbTagTreeComponent implements OnInit {
         });
       }
     } else if (!this.objectId && this.noApiCall) {
-      const newPath = movedInto.path === '' ? movedInto.name : movedInto.path + ' / ' + movedInto.name;
+      const newPath = movedInto.path === '/' ? movedInto.name : movedInto.path + '/' + movedInto.name;
       const newId = - Math.random() * 100000;
       const tagToRemove: TbTag = {id: event.node.id, userId: this.userId, name: movedNode.name, path: movedNode.path, objectId: event.node.id};
       const newTag: TbTag = {id: newId, userId: this.userId, name: movedNode.name, path: newPath, objectId: newId};
@@ -121,7 +121,7 @@ export class TbTagTreeComponent implements OnInit {
 
     if (node.data.isFolder) {
       // update tag all leaves tags inside the folder
-      this.tagService.rewriteTagsPaths(node.data.path + ' / ' + node.data.name, node.data.path + ' / ' + newName);
+      this.tagService.rewriteTagsPaths(node.data.path + '/' + node.data.name, node.data.path + '/' + newName);
       // update node name
       node.data.name = newName;
     } else if (this.objectId && node.data.isLeaf) {
@@ -138,7 +138,7 @@ export class TbTagTreeComponent implements OnInit {
     } else if (!this.objectId && this.noApiCall) {
       if (node.data.isFolder) {
         // update tag all leaves tags inside the folder
-        this.tagService.rewriteTagsPaths(node.data.path + ' / ' + node.data.name, node.data.path + ' / ' + newName);
+        this.tagService.rewriteTagsPaths(node.data.path + '/' + node.data.name, node.data.path + '/' + newName);
       } else if (node.data.isLeaf) {
 
       // update tag
@@ -228,7 +228,7 @@ export class TbTagTreeComponent implements OnInit {
       name = data;
     }
     if (this.objectId) {
-      this.tagService.createTag(name, 'Mes tags', this.userId, this.objectId).subscribe(tag => {
+      this.tagService.createTag(name, '/', this.userId, this.objectId).subscribe(tag => {
         this.treeService.growTree(tag.path, this.tree);
         this.treeService.placeTag(tag, this.tree);
         this.treeComponent.treeModel.update();
@@ -243,7 +243,7 @@ export class TbTagTreeComponent implements OnInit {
       this.form.controls.tagInput.setValue('', {emitEvent: false});
     } else if (!this.objectId && this.noApiCall) {
       const tempId = - Math.random() * 100000;
-      const tag: TbTag = {id: tempId, userId: this.userId, name: name, path: 'Mes tags', objectId: tempId};
+      const tag: TbTag = {id: tempId, userId: this.userId, name: name, path: '/', objectId: tempId};
       this.treeService.growTree(tag.path, this.tree);
       this.treeService.placeTag(tag, this.tree);
       this.treeComponent.treeModel.update();
@@ -263,7 +263,7 @@ export class TbTagTreeComponent implements OnInit {
     } else {
       name = data;
     }
-    this.treeService.growTree('Mes tags' + ' / ' + name, this.tree);
+    this.treeService.growTree('/' + name, this.tree);
     this.treeComponent.treeModel.update();
     this.form.controls.folderInput.setValue('', {emitEvent: false});
   }
