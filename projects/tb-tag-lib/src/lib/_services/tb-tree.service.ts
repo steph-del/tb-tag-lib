@@ -205,7 +205,7 @@ export class TreeService {
       );
     } else if (ti.path === '' && tag.path === '/') {
       tree.push(
-        {id: tag.id, userId: tag.userId, path: ti.name, isFolder: false, isLeaf: true, isEditing: false, isEditable: _isEditable, name: tagName, level: ti.level + 1, children: []}
+        {id: tag.id, userId: tag.userId, path: '', isFolder: false, isLeaf: true, isEditing: false, isEditable: _isEditable, name: tagName, level: ti.level + 1, children: []}
       );
     } else {
       ti.children.push(

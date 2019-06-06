@@ -116,7 +116,6 @@ export class TbTagTreeComponent implements OnInit {
   * Rename a tag path and its children paths
   */
   renameTag(node: TreeNode, newName: string) {
-    // @todo emit renamed tag (old + new names + tag id) (could be linked to other objects)
     node.data.isEditing = false;
     newName = newName.trim();
     newName = newName.replace(/\s\s+/g, ' '); // repalce multi spaces
@@ -128,7 +127,7 @@ export class TbTagTreeComponent implements OnInit {
       node.data.name = newName;
     } else if (this.objectId && node.data.isLeaf) {
       // update tag
-      const tag: TbTag = {id: node.data.id, userId: node.data.userId, path: node.data.path, name: newName, objectId: this.objectId};
+      const tag: TbTag = {id: node.data.id, userId: node.data.userId, path: '/' + node.data.path, name: newName, objectId: this.objectId};
       this.tagService.updateTag(tag).subscribe(resultTag => {
         this.log.emit({module: 'tb-tag-lib', type: 'info', message_fr: `Le tag "${tag.name}" a bien été enregistré`});
         node.data.name = newName;
@@ -139,7 +138,7 @@ export class TbTagTreeComponent implements OnInit {
       });
     } else if (!this.objectId && this.noApiCall) {
       if (node.data.isFolder) {
-        // update tag all leaves tags inside the folder
+        // update all leaves tags inside the folder
         this.tagService.rewriteTagsPaths(node.data.path + '/' + node.data.name, node.data.path + '/' + newName);
       } else if (node.data.isLeaf) {
 
