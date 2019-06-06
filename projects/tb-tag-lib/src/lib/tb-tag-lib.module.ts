@@ -3,7 +3,7 @@ import { BrowserModule } from '@angular/platform-browser';
 import { HttpClientModule } from '@angular/common/http';
 import { ReactiveFormsModule } from '@angular/forms';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
-import { MatInputModule, MatAutocompleteModule, MatProgressSpinnerModule, MatChipsModule, MatIconModule, MatDialogModule, MatButtonModule, MatMenuModule } from '@angular/material';
+import { MatInputModule, MatAutocompleteModule, MatProgressSpinnerModule, MatChipsModule, MatIconModule, MatDialogModule, MatButtonModule, MatMenuModule, MatSnackBarModule } from '@angular/material';
 
 import { TbTagTreeComponent } from './tree/tb-tag-tree.component';
 import { TbTagComponent } from './tag/tb-tag.component';
@@ -18,7 +18,7 @@ import { TreeService } from './_services/tb-tree.service';
     BrowserAnimationsModule,
     HttpClientModule,
     TreeModule.forRoot(),
-    MatInputModule, MatAutocompleteModule, MatProgressSpinnerModule, MatChipsModule, MatIconModule, MatDialogModule, MatButtonModule, MatMenuModule
+    MatInputModule, MatAutocompleteModule, MatProgressSpinnerModule, MatChipsModule, MatIconModule, MatDialogModule, MatButtonModule, MatMenuModule, MatSnackBarModule
   ],
   declarations: [TbTagTreeComponent, TbTagComponent],
   exports: [TbTagTreeComponent, TbTagComponent]

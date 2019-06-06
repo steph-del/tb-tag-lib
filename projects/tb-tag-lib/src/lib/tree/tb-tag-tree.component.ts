@@ -9,6 +9,8 @@ import { TbTag } from '../_models/tbtag.model';
 import { TreeService } from '../_services/tb-tree.service';
 import { TbTagService } from '../_services/tb-tag-lib.service';
 
+import {MatSnackBar} from '@angular/material/snack-bar';
+
 @Component({
   selector: 'tb-tag-tree',
   templateUrl: './tb-tag-tree.component.html',
@@ -49,7 +51,7 @@ export class TbTagTreeComponent implements OnInit {
   // CODE
   //
 
-  constructor(private treeService: TreeService, private tagService: TbTagService, private fb: FormBuilder) { }
+  constructor(private treeService: TreeService, private tagService: TbTagService, private fb: FormBuilder, private snackBar: MatSnackBar) { }
 
   ngOnInit() {
     this.userId = this.treeService.userId;
@@ -164,6 +166,7 @@ export class TbTagTreeComponent implements OnInit {
   deleteTag(node: TreeNode): void {
     if (node.children.length > 0) {
       this.log.emit({module: 'tb-tag-lib', type: 'warning', message_fr: `Vous ne pouvez pas supprimer un tag contenant d\'autres tags`});
+      this.snackBar.open('Vous ne pouvez pas supprimer un dossier contenant d\'autres dossiers ou tags', '', {duration: 2000});
       return;
     }
 

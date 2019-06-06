@@ -69,7 +69,7 @@
             <span>{{ node.data.name }}</span>
             <div class="spacer"> </div>
             <mat-icon class="mat-icon-inside-tree action" (click)="editTagName(node)">edit</mat-icon>
-            <mat-icon class="mat-icon-inside-tree action" (click)="deleteTag(node)">delete</mat-icon>
+            <!--<mat-icon class="mat-icon-inside-tree action" (click)="deleteTag(node)">delete</mat-icon>-->
           </div>
           
           <div class="inline" *ngIf="node.data.isEditable && node.data.isEditing ===  true" (click)="switchExpandedNode(node)">
