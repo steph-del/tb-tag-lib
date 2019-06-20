@@ -33,7 +33,7 @@
   <p *ngIf="!isLoadingUsersTags && cantLoadUsersTags">Nous n'arrivons pas à récupérer vos tags personnalisés...</p>
 
   <br />
-  <button type="button" mat-raised-button (click)="$event.preventDefault(); toggleTree()">Gérer mes tags</button>
+  <button type="button" color="primary" mat-raised-button (click)="$event.preventDefault(); toggleTree()">Gérer mes tags</button>
 
   <div class="tagsTree" *ngIf="showTree">
     <tb-tag-tree
