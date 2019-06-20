@@ -7,7 +7,7 @@
         *ngFor= "let tag of cat"
         color="none"
         selected="true"
-        [disabled]="basicTagAlreadyUsed(tag)"
+        disabled="false"
         (click)="addBasicTag(tag)">
         {{ tag.name }}
         <mat-spinner class="tagSpinner" diameter="16" *ngIf="tag.pending"></mat-spinner>
@@ -21,7 +21,7 @@
       *ngFor= "let tag of userTags"
       [color]="getColor(tag)"
       selected="true"
-      disabled="true"
+      disabled="false"
       (click)="linkTag(tag)">
       {{ tag.name }}
       <mat-spinner class="tagSpinner" diameter="16" *ngIf="tag.pending"></mat-spinner>
