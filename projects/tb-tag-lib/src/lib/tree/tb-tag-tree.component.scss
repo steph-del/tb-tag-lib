@@ -32,3 +32,15 @@
     padding-left: 10px;
   }
 }
+
+::ng-deep {
+  tree-node-children {
+    .tree-children {padding-left: 20px; }
+  }
+}
+
+.create-action-form {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+}
