@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, of } from 'rxjs';
+import { Observable, of, Subject } from 'rxjs';
 import { map, tap, mergeMap } from 'rxjs/operators';
 import { TbTag } from '../_models/tbtag.model';
 
@@ -20,6 +20,8 @@ export class TbTagService {
   public basicTags = [];
 
   usersTags: Array<TbTag> = [];
+
+  treeMustBeUpdated = new Subject<boolean>();
 
   constructor(private http: HttpClient) { }
 
@@ -144,11 +146,20 @@ export class TbTagService {
    * When a folder is renamed, all children tags must be updated
    */
   rewriteTagsPaths(path: string, newPath: string): void {
+    let tagsToUpdateCount = 0;
+    let updatedTags = 0;
     this.usersTags.forEach(tagMayBeUpdated => {
       if (tagMayBeUpdated.path === path) {
+        tagsToUpdateCount++;
         tagMayBeUpdated.path = newPath;
         this.updateTag(tagMayBeUpdated).subscribe(
-          success => { /* cool */ },
+          success => {
+            updatedTags++;
+            if (updatedTags === tagsToUpdateCount) {
+              // reset tree
+              this.treeMustBeUpdated.next(true);
+            }
+          },
           error => {
             // Can't do anything inside the service !
            }

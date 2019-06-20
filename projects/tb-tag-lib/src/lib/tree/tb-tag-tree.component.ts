@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild, EventEmitter, Output, Input } from '@angular/core';
+import { Component, OnInit, OnDestroy, ViewChild, EventEmitter, Output, Input } from '@angular/core';
 import { FormGroup, FormBuilder } from '@angular/forms';
 import { TreeComponent, TreeNode } from 'angular-tree-component';
 
@@ -11,12 +11,14 @@ import { TbTagService } from '../_services/tb-tag-lib.service';
 
 import {MatSnackBar} from '@angular/material/snack-bar';
 
+import { Subscription } from 'rxjs';
+
 @Component({
   selector: 'tb-tag-tree',
   templateUrl: './tb-tag-tree.component.html',
   styleUrls: ['./tb-tag-tree.component.scss']
 })
-export class TbTagTreeComponent implements OnInit {
+export class TbTagTreeComponent implements OnInit, OnDestroy {
   @ViewChild('treeComponent') private treeComponent: TreeComponent;
 
   //
@@ -39,6 +41,7 @@ export class TbTagTreeComponent implements OnInit {
   tags: Array<TbTag> = [];
   basicTags: Array<TbTag> = [];
   userTags: Array<TbTag> = [];
+  tagServiceTreeUpdate: Subscription;
 
   // tree option
   options = {
@@ -62,6 +65,15 @@ export class TbTagTreeComponent implements OnInit {
       tagInput: this.fb.control(''),
       folderInput: this.fb.control(''),
     });
+
+    // Tag service update subscription
+    this.tagServiceTreeUpdate = this.tagService.treeMustBeUpdated.subscribe(
+      s => { this.redrawTree(); }
+    );
+  }
+
+  ngOnDestroy() {
+    try { this.tagServiceTreeUpdate.unsubscribe(); } catch (error) { }
   }
 
   /**
@@ -70,12 +82,18 @@ export class TbTagTreeComponent implements OnInit {
   moveNode(event) {
     const movedNode: TreeItem = event.node;
     const movedInto: TreeItem = event.to.parent;
+
+    const movedIntoName = movedInto.name ? movedInto.name : '';
+    const movedIntoPath = movedInto.path ? movedInto.path : '';
+
     if (this.objectId && movedNode.isFolder) {
       // update all paths
-      this.tagService.rewriteTagsPaths(movedNode.path + '/' + movedNode.name, movedInto.path + '/' + movedInto.name + '/' + movedNode.name);
+      const actualPath = (movedNode.path !== '' ? '/' + movedNode.path : '') + '/' + movedNode.name; // movedNode.path + '/' + movedNode.name;
+      const newPath =  (movedIntoPath === '' && movedIntoName === '') ? '/' + movedNode.name : movedIntoPath + '/' + movedIntoName + '/' + movedNode.name;
+      this.tagService.rewriteTagsPaths(actualPath, newPath);
     } else if (this.objectId && movedNode.isLeaf) {
       // update movedNode path
-      const newPath = movedInto.path === '/' ? movedInto.name : movedInto.path + '/' + movedInto.name;
+      const newPath = movedIntoPath === '/' ? movedIntoName : movedIntoPath + '/' + movedIntoName;
       // update node
       if (this.objectId && !this.noApiCall) {
         this.tagService.updateTag({id: movedNode.id, userId: this.userId, name: movedNode.name, path: newPath, objectId: this.objectId})
@@ -89,7 +107,7 @@ export class TbTagTreeComponent implements OnInit {
         });
       }
     } else if (!this.objectId && this.noApiCall) {
-      const newPath = movedInto.path === '/' ? movedInto.name : movedInto.path + '/' + movedInto.name;
+      const newPath = movedIntoPath === '/' ? movedIntoName : movedIntoPath + '/' + movedIntoName;
       const newId = - Math.random() * 100000;
       const tagToRemove: TbTag = {id: event.node.id, userId: this.userId, name: movedNode.name, path: movedNode.path, objectId: event.node.id};
       const newTag: TbTag = {id: newId, userId: this.userId, name: movedNode.name, path: newPath, objectId: newId};
@@ -106,10 +124,9 @@ export class TbTagTreeComponent implements OnInit {
   /**
   * Return true if a node is allowed to drop
   * Params are provided by tree node component (see options)
-  * Drop is allowed for folder and non basic tags
   */
   _allowDrop(element, {parent, index}) {
-    return parent.data.isFolder && parent.data.isEditable;
+    return !parent.data.isLeaf; // (parent.data.isFolder && parent.data.isEditable);
   }
 
   /**
@@ -288,6 +305,17 @@ export class TbTagTreeComponent implements OnInit {
         this.treeComponent.sizeChanged();
       }
     });
+  }
+
+  redrawTree() {
+    const tags = this.userTags;
+    if (tags.length > 0) {
+      tags.forEach(tag => { this.treeService.growTree(tag.path, this.tree); });
+      tags.forEach(tag => { this.treeService.placeTag(tag, this.tree); });
+      this.treeComponent.treeModel.update();
+      this.treeComponent.treeModel.expandAll();
+      this.treeComponent.sizeChanged();
+    }
   }
 
   onInitialized(tree: TreeComponent) {
