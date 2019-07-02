@@ -231,7 +231,7 @@ export class TbTagComponent implements OnInit {
   }
 
   newTagFromTree(tag: TbTag) {
-    this.objTgs.push(tag);
+    // this.objTgs.push(tag);
     this.userTags.push(tag);
     this.newTag.next(tag);
   }

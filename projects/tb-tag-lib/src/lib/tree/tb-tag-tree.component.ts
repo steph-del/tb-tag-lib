@@ -253,6 +253,7 @@ export class TbTagTreeComponent implements OnInit, OnDestroy {
         this.treeComponent.treeModel.update();
         const nodeToExpand: TreeNode = this.treeComponent.treeModel.getNodeById(tag.id);
         nodeToExpand.parent.expand();
+        this._newTag.next(tag);
         this.log.emit({module: 'tb-tag-lib', type: 'info', message_fr: `Le tag "${tag.name}" a bien été créé`});
       }, error => {
         this.httpError.next(error);
