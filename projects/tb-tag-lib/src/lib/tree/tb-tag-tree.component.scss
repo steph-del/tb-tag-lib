@@ -42,7 +42,10 @@
 .create-action-form {
   display: flex;
   flex-direction: row;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  mat-form-field {
+    max-width: 130px;
+  }
 }
 
 .spinner {
