@@ -29,6 +29,7 @@ export class TbTagComponent implements OnInit {
   @Input() tagEndpoint = '/api/photo_tags';
   @Input() apiRelationPath = '/api/photo_photo_tag_relations';
   @Input() apiRetrievePath = '/api/photos/{id}/photo_tag_relations';
+  @Input() apiTagsRelationsPath = '/api/photo_tags/{id}/photo_relations';
   @Input() set basicTags(data: Array<TbTag>) {
     this.basicTagsSet = true;
     this._basicTags = data;
@@ -68,6 +69,7 @@ export class TbTagComponent implements OnInit {
     this.tagService.setBaseApiUrl(this.baseApiUrl);
     this.tagService.setApiRelationPath(this.apiRelationPath);
     this.tagService.setApiRetrievePath(this.apiRetrievePath);
+    this.tagService.setApiTagsRelationsPath(this.apiTagsRelationsPath);
     this.tagService.setObjectName(this.objectName);
     this.tagService.setObjectEndpoint(this.objectEndpoint);
     this.tagService.setTagName(this.tagName);
@@ -241,18 +243,8 @@ export class TbTagComponent implements OnInit {
     this.newTag.next(tag);
   }
 
-  removedTagFromTree(tag: TbTag) {
-    let i = 0;
-    this.objTgs.forEach(objTag => {
-      if (objTag.objectId === tag.objectId) { this.objTgs.splice(i, 1); }
-      i++;
-    });
-    let j = 0;
-    this.userTags.forEach(userTag => {
-      if (userTag.objectId === tag.objectId) { this.userTags.splice(j, 1); }
-      j++;
-    });
-    this.removedTag.next(tag);
+  removedTagFromTree() {
+    this.getTags(this.userId);
   }
 
   toggleTree() {

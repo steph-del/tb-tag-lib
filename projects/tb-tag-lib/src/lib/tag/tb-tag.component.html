@@ -42,7 +42,8 @@
       [noApiCall]="noApiCall"
       (httpError)="treeComponentHttpError($event)"
       (_newTag)="newTagFromTree($event)"
-      (_removedTag)="removedTagFromTree($event)"
+      (_removedTag)="removedTagFromTree()"
+      (_redrawTags)="getTags(userId)"
       (tagsHasChanged)="getTags(userId)"
       (log)="_log($event)"></tb-tag-tree>
   </div>

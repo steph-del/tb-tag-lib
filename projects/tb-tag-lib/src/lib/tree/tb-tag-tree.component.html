@@ -60,16 +60,16 @@
           <div class="inline" *ngIf="!node.data.isEditable" (click)="switchExpandedNode(node)">
             <mat-icon class="mat-icon-inside-tree" *ngIf="node.data.isLeaf">local_offer</mat-icon>
             <mat-icon class="mat-icon-inside-tree" *ngIf="node.data.isFolder">folder_open</mat-icon>
-            <span>{{ node.data.name }} [{{node.data.id}}]</span>
+            <span>{{ node.data.name }}</span>
           </div>
           
           <div class="inline" *ngIf="node.data.isEditable && node.data.isEditing ===  false" (click)="switchExpandedNode(node)">
             <mat-icon class="mat-icon-inside-tree" *ngIf="node.data.isLeaf">local_offer</mat-icon>
             <mat-icon class="mat-icon-inside-tree" *ngIf="node.data.isFolder">folder_open</mat-icon>
-            <span>{{ node.data.name }} [{{node.data.id}}]</span>
+            <span>{{ node.data.name }}</span>
             <div class="spacer"> </div>
+            <mat-icon *ngIf="!node.hasChildren" class="mat-icon-inside-tree action" (click)="deleteTag(node)">delete</mat-icon>
             <mat-icon class="mat-icon-inside-tree action" (click)="editTagName(node)">edit</mat-icon>
-            <!--<mat-icon class="mat-icon-inside-tree action" (click)="deleteTag(node)">delete</mat-icon>-->
           </div>
           
           <div class="inline" *ngIf="node.data.isEditable && node.data.isEditing ===  true" (click)="switchExpandedNode(node)">

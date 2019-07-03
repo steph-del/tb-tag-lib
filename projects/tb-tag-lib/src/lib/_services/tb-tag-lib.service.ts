@@ -14,6 +14,7 @@ export class TbTagService {
   baseApiUrl: string;
   apiRelationPath = '/api/photo_photo_tag_relations';
   apiRetrievePath = '/api/photos/{id}/photo_tag_relations';
+  apiTagsRelationsPath = '/api/photo_tags/{id}/photo_relations';
   objectName = 'photo';
   objectEndpoint = '/api/photos';
   tagName = 'photoTag';
@@ -42,6 +43,10 @@ export class TbTagService {
 
   public setApiRetrievePath(value: string): void {
     this.apiRetrievePath = value;
+  }
+
+  public setApiTagsRelationsPath(value: string): void {
+    this.apiTagsRelationsPath = value;
   }
 
   public setObjectName(value: string): void {
@@ -127,17 +132,14 @@ export class TbTagService {
     );
   }
 
-  removeTag(tag: TbTag): Observable<{success: boolean}> {
+  getTagsRelations(objectId: number): Observable<Array<any>> {
+    const headers = {};
+    return this.http.get<Array<any>>(`${this.baseApiUrl}${this.apiTagsRelationsPath.replace('{id}', objectId.toString())}.json`, {headers});
+  }
+
+  removeTag(tag: TbTag): Observable<any> {
     // call API
-    let i = 0;
-    this.usersTags.forEach(_tag => {
-      if (_tag.id === tag.id) {
-        this.usersTags.splice(i, 1);
-        return of({success: true });
-      }
-      i++;
-    });
-    return of({ success: false });
+    return this.http.delete<any>(`${this.baseApiUrl}${this.tagEndpoint}/${tag.id}`);
   }
 
   updateTag(tag: TbTag): Observable<TbTag> {
@@ -189,7 +191,7 @@ export class TbTagService {
   }
 
   updateFolder(tag: TbTag): Observable<TbTag> {
-    if (_.take(tag.path)[0] !== '/') { console.log('ADD / ~update folder'); tag.path = '/' + tag.path; }
+    if (_.take(tag.path)[0] !== '/') { tag.path = '/' + tag.path; }
     return this.http.patch<TbTag>(`${this.baseApiUrl}${this.tagEndpoint}/${tag.id}`, {path: tag.path});
   }
 

@@ -1,0 +1,30 @@
+<h1 mat-dialog-title style="text-align: center;">Supprimer le tag <b>{{ data.name }}</b> ?</h1>
+
+<div mat-dialog-content>
+  <div *ngIf="!isDeletingTag && !tagDeleted">
+    <div *ngIf="isLoading" style="display: flex; justify-content: center;"><mat-spinner diameter="16" style="margin-right: 5px;"></mat-spinner>Veuillez patienter...</div>
+    <div *ngIf="!isLoading && linkedObjectsCount">
+      <div *ngIf="linkedObjectsCount == 0">
+        <p style="text-align: center;">Ce tag n'est lié à aucune donnée</p>
+      </div>
+      <div *ngIf="linkedObjectsCount == 1">
+        <p style="text-align: center;">Ce tag est lié à <b>une</b> donnée.<br /><br />Si vous le supprimer, il ne sera plus lié à cette donnée.</p>
+      </div>
+      <div *ngIf="linkedObjectsCount > 1">
+        <p style="text-align: center;">Ce tag est lié à <b>{{ linkedObjectsCount }}</b> données.<br /><br />Si vous le supprimer, il ne sera plus lié à ces  {{linkedObjectsCount}} données.</p>
+      </div>
+    </div>
+  </div>
+  <div *ngIf="isDeletingTag && !tagDeleted">
+    <p style="display: flex; justify-content: center;"><mat-spinner diameter="16" style="margin-right: 5px;"></mat-spinner>Suppression du tag {{ data.name }} en cours...</p>
+  </div>
+  <div *ngIf="!isDeletingTag && tagDeleted">
+    <p style="text-align: center">Le tag {{ data.name }} à bien été supprimé.</p>
+  </div>
+</div>
+
+<div mat-dialog-actions style="justify-content: space-between;">
+  <button mat-button *ngIf="!tagDeleted" (click)="onNoClick()" cdkFocusInitial>Annuler</button>
+  <button mat-button *ngIf="!isLoading && linkedObjectsCount !== null && !tagDeleted" (click)="deleteTag(data)">Confirmer la suppression</button>
+  <button mat-button *ngIf="tagDeleted" [mat-dialog-close]="{success: true}">Fermer</button>
+</div>

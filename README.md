@@ -42,6 +42,7 @@ Exemple d'utilisation :
 | tagEndpoint               | Oui    | string            |         | '/api/photo_tags'                      | chemin d'accès API vers le tag |
 | apiRelationPath           | Oui    | string            |         | '/api/photo_photo_tag_relations'       | chemin d'accès API vers la relation object <-> tag |
 | apiRetrievePath           | Oui    | string            |         | '/api/photos/{id}/photo_tag_relations' | chemin d'accès API pour récupérer les relations afférentes à l'objet. `{id}` est automatiquement remplacé (conserver tel quel dans le paramètre). |
+| apiTagsRelationsPath      | Oui    | string            |         | '/api/photo_tags/{id}/photo_relations' | chemin d'accès API pour récupérer les objets afférents au tag. `{id}` est automatiquement remplacé (conserver tel quel dans le paramètre). |
 | basicTags                 | Non    | `[TagModel]`      |         | /                                      | liste de tags par défaut à afficher à l'utilisateur |
 | noApiCall                 | Non    | boolean           |         | false                                  | ne pas effectuer les appels aux API. S'utilise de concert avec un `objectId === null` |
 

@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, ViewChild, EventEmitter, Output, Input } from '@angular/core';
+import { Component, OnInit, OnDestroy, ViewChild, EventEmitter, Output, Input, Inject } from '@angular/core';
 import { FormGroup, FormBuilder } from '@angular/forms';
 import { TreeComponent, TreeNode } from 'angular-tree-component';
 
@@ -10,6 +10,7 @@ import { TreeService } from '../_services/tb-tree.service';
 import { TbTagService } from '../_services/tb-tag-lib.service';
 
 import {MatSnackBar} from '@angular/material/snack-bar';
+import { MatDialogRef, MAT_DIALOG_DATA, MatDialog } from '@angular/material';
 
 import { Subscription } from 'rxjs';
 import * as _ from 'lodash';
@@ -32,6 +33,7 @@ export class TbTagTreeComponent implements OnInit, OnDestroy {
   @Output() httpError = new EventEmitter<any>();
   @Output() _newTag = new EventEmitter<TbTag>();
   @Output() _removedTag = new EventEmitter<TbTag>();
+  @Output() _redrawTags = new EventEmitter<boolean>();
 
   //
   // VARIABLES
@@ -57,7 +59,7 @@ export class TbTagTreeComponent implements OnInit, OnDestroy {
   // CODE
   //
 
-  constructor(private treeService: TreeService, public tagService: TbTagService, private fb: FormBuilder, private snackBar: MatSnackBar) { }
+  constructor(private treeService: TreeService, public tagService: TbTagService, private fb: FormBuilder, private snackBar: MatSnackBar, public dialog: MatDialog) { }
 
   ngOnInit() {
     this.userId = this.treeService.userId;
@@ -214,43 +216,23 @@ export class TbTagTreeComponent implements OnInit, OnDestroy {
     }
 
     if (this.objectId) {
-      const tag: TbTag = {id: node.data.id, userId: node.data.userId, name: node.data.name, path: node.data.path, objectId: this.objectId};
-      // delete object tag...
-      this.tagService.removeTag(tag).subscribe(success => {
-        // and then, remove node from tree
-        const treeNodeToRemove: TreeNode = this.treeComponent.treeModel.getNodeById(node.data.id);
-        const parentTreeNodeToRemove: TreeNode = treeNodeToRemove.parent;
-        let i = 0;
-        let j: number = null;
-        parentTreeNodeToRemove.data.children.forEach(tntr => {
-          if (tntr.id === node.data.id) { j = i; }
-          i++;
-        });
-        if (j !== null) { parentTreeNodeToRemove.data.children.splice(j, 1); }
-        this.treeComponent.treeModel.update();
-        this.log.emit({module: 'tb-tag-lib', type: 'info', message_fr: `Le tag "${tag.name}" a bien été supprimé`});
-      }, error => {
-        this.httpError.next(error);
-        this.log.emit({module: 'tb-tag-lib', type: 'error', message_fr: `Impossible de supprimer le tag "${tag.name}"`});
-      });
-
-      this.tagsHasChanged.emit(true);
-    } else if (!this.objectId && this.noApiCall) {
-      const tag: TbTag = {id: null, userId: node.data.userId, name: node.data.name, path: node.data.path, objectId: null};
-      // remove tag from tree
-      const treeNodeToRemove: TreeNode = this.treeComponent.treeModel.getNodeById(node.data.id);
-      const parentTreeNodeToRemove: TreeNode = treeNodeToRemove.parent;
-      let i = 0;
-      let j: number = null;
-      parentTreeNodeToRemove.data.children.forEach(tntr => {
-        if (tntr.id === node.data.id) { j = i; }
-        i++;
-      });
-      if (j !== null) { parentTreeNodeToRemove.data.children.splice(j, 1); }
-      this.treeComponent.treeModel.update();
-      // emit removed tag
-      this._removedTag.next(tag);
+      this.openDeleteTagDialog(node.data);
     }
+  }
+
+  openDeleteTagDialog(tag: TbTag): void {
+    const dialogRef = this.dialog.open(DialogDeleteTagComponent, {
+      width: '400px',
+      disableClose: true,
+      data: tag
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result.success) {
+        this.resetTree();
+        this._redrawTags.next(true);
+      }
+    });
   }
 
   /**
@@ -364,6 +346,61 @@ export class TbTagTreeComponent implements OnInit, OnDestroy {
 
   switchExpandedNode(node: TreeNode): void {
     node.isExpanded ? node.collapse() : node.expand();
+  }
+
+}
+
+
+@Component({
+  selector: 'tb-tag-dialog-delete-tag',
+  templateUrl: 'dialog-delete-tag.html',
+})
+export class DialogDeleteTagComponent implements OnInit {
+  linkedObjectsCount: number = null;
+  isLoading = false;
+  isDeletingTag = false;
+  tagDeleted = false;
+  errorDeletingTag = false;
+
+  constructor(
+    public dialogRef: MatDialogRef<DialogDeleteTagComponent>,
+    @Inject(MAT_DIALOG_DATA) public data: TbTag,
+    private tagService: TbTagService) {}
+
+  ngOnInit() {
+    this.isLoading = true;
+    // get the number of linked objects
+    this.tagService.getTagsRelations(this.data.id).subscribe(
+      result => {
+        this.linkedObjectsCount = result.length;
+        this.isLoading = false;
+      },
+      error => {
+        this.dialogRef.close();
+        this.isLoading = false;
+      }
+    );
+  }
+
+  onNoClick(): void {
+    this.dialogRef.close();
+  }
+
+  closeDialog(): void {
+    this.dialogRef.close();
+  }
+
+  deleteTag(tag: TbTag): void {
+    this.isDeletingTag = true;
+    this.tagService.removeTag(tag).subscribe(
+      success => {
+        this.isDeletingTag = false;
+        this.tagDeleted = true;
+      }, error => {
+        this.isDeletingTag = false;
+        this.errorDeletingTag = true;
+      }
+    );
   }
 
 }
