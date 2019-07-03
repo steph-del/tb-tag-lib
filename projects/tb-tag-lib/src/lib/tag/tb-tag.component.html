@@ -25,7 +25,8 @@
       (click)="linkTag(tag)">
       {{ getTagName(tag) }}
       <mat-spinner class="tagSpinner" diameter="16" *ngIf="tag.pending"></mat-spinner>
-      <mat-icon matChipRemove *ngIf="userTagAlreadyUsed(tag)" (click)="unlinkTag(tag)">cancel</mat-icon>
+      <mat-spinner class="tagSpinner" color="accent" diameter="16" *ngIf="tag.unlinking"></mat-spinner>
+      <mat-icon matChipRemove *ngIf="userTagAlreadyUsed(tag) && !tag.unlinking" (click)="unlinkTag(tag)">cancel</mat-icon>
     </mat-chip>
   </mat-chip-list>
   <p *ngIf="isLoadingUsersTags" class="loadingTags"><mat-spinner diameter="16"></mat-spinner>Chargement de vos tags personnalisés...</p>

@@ -5,4 +5,5 @@ export interface TbTag {
   path: string;
   objectId?: number;
   pending?: boolean;
+  unlinking?: boolean;
 }

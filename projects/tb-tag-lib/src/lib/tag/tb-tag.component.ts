@@ -153,6 +153,7 @@ export class TbTagComponent implements OnInit {
    */
   unlinkTag(tag: TbTag): void {
     if (this.objectId) {
+      tag.unlinking = true;
       this.tagService.unlinkTagToObject(tag.id, this.objectId).subscribe(
         success => {
           let i = 0;
@@ -160,8 +161,10 @@ export class TbTagComponent implements OnInit {
             if (objTag.id === tag.id) { this.objTgs.splice(i, 1); }
             i++;
           });
+          tag.unlinking = false;
         }, error => {
           this.httpError.next(error);
+          tag.unlinking = false;
           this.log.emit({module: 'tb-tag-lib', type: 'error', message_fr: `Impossible de supprimer le lien entre le tag "${tag.name}" et votre photo`});
         }
       );
