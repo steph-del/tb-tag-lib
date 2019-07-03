@@ -1,4 +1,4 @@
-import { Component, OnInit, Input, Output, EventEmitter } from '@angular/core';
+import { Component, OnInit, Input, Output, EventEmitter, OnChanges, SimpleChanges } from '@angular/core';
 import { FormBuilder } from '@angular/forms';
 
 import { Observable } from 'rxjs';
@@ -15,12 +15,15 @@ import * as _ from 'lodash';
   templateUrl: './tb-tag.component.html',
   styleUrls: ['./tb-tag.component.scss']
 })
-export class TbTagComponent implements OnInit {
+export class TbTagComponent implements OnInit, OnChanges {
   //
   // INPUT / OUTPUT
   //
   @Input() userId: number;
-  @Input() objectId: number;
+  // @Input() objectId: number;
+  @Input() set objectId(data: number) {
+    this._objectId = data;
+  }
   @Input() baseApiUrl = 'http://localhost:8000';
   @Input() noApiCall = false;
   @Input() objectName = 'photo';
@@ -42,6 +45,7 @@ export class TbTagComponent implements OnInit {
   @Output() httpError = new EventEmitter<any>();
 
   _basicTags: Array<TbTag> = [];
+  _objectId: number;
   basicTagsByCategory: Array<Array<TbTag>> = [];
   basicTagsSet = false;
   userTags: Array<TbTag> = [];
@@ -59,7 +63,7 @@ export class TbTagComponent implements OnInit {
 
   ngOnInit() {
     // objectId provided ?
-    if (!this.objectId && !this.noApiCall) {
+    if (!this._objectId && !this.noApiCall) {
       this.log.emit({module: 'tb-tag-lib', type: 'error', message_fr: 'Vous devez fournir un objectId pour initialiser le module'});
     }
 
@@ -78,20 +82,30 @@ export class TbTagComponent implements OnInit {
     this.treeService.setUserId(this.userId);
 
     // get object (ie photo) tags
-    if (this.objectId) {
-      this.tagService.getObjTags(this.objectId).subscribe(
-        result => {
-          this.objTgs = result['value'];
-        },
-        error => {
-          this.httpError.next(error);
-        }
-      );
+    if (this._objectId) {
+      this.getObjTags();
     }
 
     // Get tags
     this.getTags(this.userId);
 
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes.objectId && changes.objectId.firstChange === false) {
+      this.getObjTags();
+    }
+  }
+
+  getObjTags(): void {
+    this.tagService.getObjTags(this._objectId).subscribe(
+      result => {
+        this.objTgs = result['value'];
+      },
+      error => {
+        this.httpError.next(error);
+      }
+    );
   }
 
   /**
@@ -130,9 +144,9 @@ export class TbTagComponent implements OnInit {
    * When user select a tag, link it to the photo and emit the tag
    */
   linkTag(tag: TbTag): void {
-    if (this.objectId && (!this.basicTagAlreadyUsed(tag) || !this.userTagAlreadyUsed(tag))) {
+    if (this._objectId && (!this.basicTagAlreadyUsed(tag) || !this.userTagAlreadyUsed(tag))) {
       tag.pending = true;
-      this.tagService.linkTagToObject(tag.id, this.objectId).subscribe(
+      this.tagService.linkTagToObject(tag.id, this._objectId).subscribe(
         success => {
           this.objTgs.push(tag);
           this.log.emit({module: 'tb-tag-lib', type: 'success', message_fr: `Le tag "${tag.name}" est ajouté à votre photo`});
@@ -144,7 +158,7 @@ export class TbTagComponent implements OnInit {
           this.log.emit({module: 'tb-tag-lib', type: 'error', message_fr: `Impossible de lier le tag "${tag.name}" à votre photo`});
         }
       );
-    } else if (!this.objectId && this.noApiCall) {
+    } else if (!this._objectId && this.noApiCall) {
       this.objTgs.push(tag);
       this.newTag.next(tag);
     }
@@ -154,9 +168,9 @@ export class TbTagComponent implements OnInit {
    * When user unselect a tag, unlink it to the photo and emit the tag
    */
   unlinkTag(tag: TbTag): void {
-    if (this.objectId) {
+    if (this._objectId) {
       tag.unlinking = true;
-      this.tagService.unlinkTagToObject(tag.id, this.objectId).subscribe(
+      this.tagService.unlinkTagToObject(tag.id, this._objectId).subscribe(
         success => {
           let i = 0;
           this.objTgs.forEach(objTag => {
@@ -170,7 +184,7 @@ export class TbTagComponent implements OnInit {
           this.log.emit({module: 'tb-tag-lib', type: 'error', message_fr: `Impossible de supprimer le lien entre le tag "${tag.name}" et votre photo`});
         }
       );
-    } else if (!this.objectId && this.noApiCall) {
+    } else if (!this._objectId && this.noApiCall) {
       let i = 0;
       this.objTgs.forEach(objTag => {
         if (objTag.name === tag.name && objTag.path === tag.path) { this.objTgs.splice(i, 1); }
@@ -194,11 +208,11 @@ export class TbTagComponent implements OnInit {
       if (uTag.name === tag.name && uTag.path === tag.path) { alreadyExistInDb = true; tagToLink = uTag; }
     }
 
-    if (this.objectId && alreadyExistInDb) {
+    if (this._objectId && alreadyExistInDb) {
       tag.pending = false;
       tagToLink.pending = true;
       // We only link the tag
-      this.tagService.linkTagToObject(tagToLink.id, this.objectId).subscribe (
+      this.tagService.linkTagToObject(tagToLink.id, this._objectId).subscribe (
         success => {
           this.objTgs.push(tagToLink);
           tagToLink.pending = false;
@@ -208,15 +222,15 @@ export class TbTagComponent implements OnInit {
           this.log.emit({module: 'tb-tag-lib', type: 'error', message_fr: `Impossible de lier le tag "${tag.name}" à votre photo`});
         }
       );
-    } else if (this.objectId && !alreadyExistInDb) {
+    } else if (this._objectId && !alreadyExistInDb) {
       // We first create the tag and the link it
-      this.tagService.createTag(tag.name, tag.path, tag.userId, this.objectId).subscribe(
+      this.tagService.createTag(tag.name, tag.path, tag.userId, this._objectId).subscribe(
         successTag => {
           tag.pending = false;
           successTag.pending = true;
           this.userTags.push(successTag);
           // link
-          this.tagService.linkTagToObject(successTag.id, this.objectId).subscribe(
+          this.tagService.linkTagToObject(successTag.id, this._objectId).subscribe(
             success => {
               this.objTgs.push(successTag);
               tag.pending = false;

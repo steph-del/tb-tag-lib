@@ -38,7 +38,7 @@
 
   <div class="tagsTree" *ngIf="showTree">
     <tb-tag-tree
-      [objectId]="objectId"
+      [objectId]="_objectId"
       [noApiCall]="noApiCall"
       (httpError)="treeComponentHttpError($event)"
       (_newTag)="newTagFromTree($event)"
