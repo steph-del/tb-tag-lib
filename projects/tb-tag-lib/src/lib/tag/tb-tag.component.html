@@ -23,12 +23,12 @@
       selected="true"
       disabled="false"
       (click)="linkTag(tag)">
-      {{ tag.name }}
+      {{ getTagName(tag) }}
       <mat-spinner class="tagSpinner" diameter="16" *ngIf="tag.pending"></mat-spinner>
       <mat-icon matChipRemove *ngIf="userTagAlreadyUsed(tag)" (click)="unlinkTag(tag)">cancel</mat-icon>
     </mat-chip>
   </mat-chip-list>
-  <p *ngIf="isLoadingUsersTags">Chargement de vos tags personnalisés...</p>
+  <p *ngIf="isLoadingUsersTags" class="loadingTags"><mat-spinner diameter="16"></mat-spinner>Chargement de vos tags personnalisés...</p>
   <p *ngIf="userTags.length == 0 && !isLoadingUsersTags && !cantLoadUsersTags">Vous n'avez aucun tag personnalisé pour l'instant</p>
   <p *ngIf="!isLoadingUsersTags && cantLoadUsersTags">Nous n'arrivons pas à récupérer vos tags personnalisés...</p>
 

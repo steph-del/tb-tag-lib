@@ -4,6 +4,8 @@ import { Observable, of, Subject } from 'rxjs';
 import { map, tap, mergeMap } from 'rxjs/operators';
 import { TbTag } from '../_models/tbtag.model';
 
+import * as _ from 'lodash';
+
 @Injectable({
   providedIn: 'root'
 })
@@ -18,6 +20,7 @@ export class TbTagService {
   tagEndpoint = '/api/photo_tags';
 
   public basicTags = [];
+  public isPatchingPaths = false;
 
   usersTags: Array<TbTag> = [];
 
@@ -137,15 +140,20 @@ export class TbTagService {
     return of({ success: false });
   }
 
-  updateTag(tag: TbTag): Observable<any> {
+  updateTag(tag: TbTag): Observable<TbTag> {
     // update existing tag through API
-    return this.http.patch(`${this.baseApiUrl}${this.tagEndpoint}/${tag.id}`, {name: tag.name, path: tag.path});
+    if (tag.name) {
+      return this.http.patch<TbTag>(`${this.baseApiUrl}${this.tagEndpoint}/${tag.id}`, {name: tag.name, path: tag.path});
+    } else {
+      return this.http.patch<TbTag>(`${this.baseApiUrl}${this.tagEndpoint}/${tag.id}`, {path: tag.path});
+    }
   }
 
   /**
    * When a folder is renamed, all children tags must be updated
    */
   rewriteTagsPaths(path: string, newPath: string): void {
+    this.isPatchingPaths = true;
     let tagsToUpdateCount = 0;
     let updatedTags = 0;
     this.usersTags.forEach(tagMayBeUpdated => {
@@ -154,6 +162,7 @@ export class TbTagService {
         tagMayBeUpdated.path = newPath;
         this.updateTag(tagMayBeUpdated).subscribe(
           success => {
+            this.isPatchingPaths = false;
             updatedTags++;
             if (updatedTags === tagsToUpdateCount) {
               // reset tree
@@ -161,6 +170,7 @@ export class TbTagService {
             }
           },
           error => {
+            this.isPatchingPaths = false;
             // Can't do anything inside the service !
            }
         );
@@ -168,9 +178,19 @@ export class TbTagService {
     });
   }
 
-  createTag(name: string, path: string, userId: number, objectId: number): Observable<any> {
+  createTag(name: string, path: string, userId: number, objectId: number): Observable<TbTag> {
     // Call API
-    return this.http.post(`${this.baseApiUrl}${this.tagEndpoint}`, {name: name, path: path, userId: userId});
+    return this.http.post<TbTag>(`${this.baseApiUrl}${this.tagEndpoint}`, {name: name, path: path, userId: userId});
+  }
+
+  createFolder(path: string, userId: number, objectId: number): Observable<TbTag> {
+    if (_.take(path)[0] !== '/') { path = '/' + path; }
+    return this.http.post<TbTag>(`${this.baseApiUrl}${this.tagEndpoint}`, {path, userId: userId});
+  }
+
+  updateFolder(tag: TbTag): Observable<TbTag> {
+    if (_.take(tag.path)[0] !== '/') { console.log('ADD / ~update folder'); tag.path = '/' + tag.path; }
+    return this.http.patch<TbTag>(`${this.baseApiUrl}${this.tagEndpoint}/${tag.id}`, {path: tag.path});
   }
 
   linkTagToObject(tagId: number, objectId: number): Observable<any> {

@@ -19,3 +19,10 @@
     }
   }
 }
+.loadingTags {
+  display: flex;
+  justify-content: center;
+  mat-spinner {
+    margin-right: 5px;
+  }
+}

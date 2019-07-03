@@ -44,3 +44,12 @@
   flex-direction: row;
   flex-wrap: wrap;
 }
+
+.spinner {
+  margin: 5px;
+  display: flex;
+  justify-content: center;
+  mat-spinner {
+    margin-right: 5px;
+  }
+}

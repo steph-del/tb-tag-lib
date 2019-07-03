@@ -12,6 +12,7 @@ import { TbTagService } from '../_services/tb-tag-lib.service';
 import {MatSnackBar} from '@angular/material/snack-bar';
 
 import { Subscription } from 'rxjs';
+import * as _ from 'lodash';
 
 @Component({
   selector: 'tb-tag-tree',
@@ -42,6 +43,8 @@ export class TbTagTreeComponent implements OnInit, OnDestroy {
   basicTags: Array<TbTag> = [];
   userTags: Array<TbTag> = [];
   tagServiceTreeUpdate: Subscription;
+  isMovingNode = false;
+  isLoadingTags = false;
 
   // tree option
   options = {
@@ -54,7 +57,7 @@ export class TbTagTreeComponent implements OnInit, OnDestroy {
   // CODE
   //
 
-  constructor(private treeService: TreeService, private tagService: TbTagService, private fb: FormBuilder, private snackBar: MatSnackBar) { }
+  constructor(private treeService: TreeService, public tagService: TbTagService, private fb: FormBuilder, private snackBar: MatSnackBar) { }
 
   ngOnInit() {
     this.userId = this.treeService.userId;
@@ -68,7 +71,7 @@ export class TbTagTreeComponent implements OnInit, OnDestroy {
 
     // Tag service update subscription
     this.tagServiceTreeUpdate = this.tagService.treeMustBeUpdated.subscribe(
-      s => { this.redrawTree(); }
+      s => { this.resetTree(); /* this.redrawTree(); */ }
     );
   }
 
@@ -86,22 +89,44 @@ export class TbTagTreeComponent implements OnInit, OnDestroy {
     const movedIntoName = movedInto.name ? movedInto.name : '';
     const movedIntoPath = movedInto.path ? movedInto.path : '';
 
+    this.isMovingNode = true;
+
     if (this.objectId && movedNode.isFolder) {
       // update all paths
-      const actualPath = (movedNode.path !== '' ? '/' + movedNode.path : '') + '/' + movedNode.name; // movedNode.path + '/' + movedNode.name;
-      const newPath =  (movedIntoPath === '' && movedIntoName === '') ? '/' + movedNode.name : movedIntoPath + '/' + movedIntoName + '/' + movedNode.name;
-      this.tagService.rewriteTagsPaths(actualPath, newPath);
+      // const actualPath = (movedNode.path !== '' ? '/' + movedNode.path : '') + '/' + movedNode.name; // movedNode.path + '/' + movedNode.name;
+      // const newPath =  (movedIntoPath === '' && movedIntoName === '') ? '/' + movedNode.name : movedIntoPath + '/' + movedIntoName + '/' + movedNode.name;
+      // this.tagService.rewriteTagsPaths(actualPath, newPath);
+      if (movedInto.isFolder || (!movedInto.isFolder && !movedInto.isLeaf)) {
+        const actualPath = (movedNode.path !== '' ? '/' + movedNode.path : '') + '/' + movedNode.name;
+        let newPath =  (movedIntoPath === '' && movedIntoName === '') ? '/' + movedNode.name : movedIntoPath + '/' + movedIntoName + '/' + movedNode.name;
+
+        if (_.take(newPath)[0] !== '/') { newPath = '/' + newPath; }
+        this.tagService.updateFolder({id: movedNode.id, userId: this.userId, name: movedNode.name, path: newPath, objectId: this.objectId}).subscribe(
+          result => {
+            this.tagService.rewriteTagsPaths(actualPath, newPath);
+            this.isMovingNode = false;
+          }, error => {
+            this.httpError.next(error);
+            this.isMovingNode = false;
+            this.resetTree();
+            this.log.emit({module: 'tb-tag-lib', type: 'error', message_fr: `Le tag "${movedNode.name}" n'a pas pu être déplacé et enregistré`});
+          }
+        );
+      }
     } else if (this.objectId && movedNode.isLeaf) {
       // update movedNode path
-      const newPath = movedIntoPath === '/' ? movedIntoName : movedIntoPath + '/' + movedIntoName;
+      let newPath = movedIntoPath === '/' ? movedIntoName : movedIntoPath + '/' + movedIntoName;
+      if (_.take(newPath)[0] !== '/') { newPath = '/' + newPath; }
       // update node
       if (this.objectId && !this.noApiCall) {
         this.tagService.updateTag({id: movedNode.id, userId: this.userId, name: movedNode.name, path: newPath, objectId: this.objectId})
         .subscribe(result => {
+          this.isMovingNode = false;
           this.log.emit({module: 'tb-tag-lib', type: 'info', message_fr: `Le tag "${movedNode.name}" a bien été déplacé et enregistré`});
         }, error => {
           // reset tree
           this.httpError.next(error);
+          this.isMovingNode = false;
           this.resetTree();
           this.log.emit({module: 'tb-tag-lib', type: 'error', message_fr: `Le tag "${movedNode.name}" n'a pas pu être déplacé et enregistré`});
         });
@@ -113,6 +138,8 @@ export class TbTagTreeComponent implements OnInit, OnDestroy {
       const newTag: TbTag = {id: newId, userId: this.userId, name: movedNode.name, path: newPath, objectId: newId};
 
       movedNode.id = newId;
+
+      this.isMovingNode = false;
 
       this._removedTag.next(tagToRemove);
       this._newTag.next(newTag);
@@ -248,7 +275,7 @@ export class TbTagTreeComponent implements OnInit, OnDestroy {
     }
     if (this.objectId) {
       this.tagService.createTag(name, '/', this.userId, this.objectId).subscribe(tag => {
-        this.treeService.growTree(tag.path, this.tree);
+        this.treeService.growTree(tag.id, tag.path, this.tree);
         this.treeService.placeTag(tag, this.tree);
         this.treeComponent.treeModel.update();
         const nodeToExpand: TreeNode = this.treeComponent.treeModel.getNodeById(tag.id);
@@ -264,7 +291,7 @@ export class TbTagTreeComponent implements OnInit, OnDestroy {
     } else if (!this.objectId && this.noApiCall) {
       const tempId = - Math.random() * 100000;
       const tag: TbTag = {id: tempId, userId: this.userId, name: name, path: '/', objectId: tempId};
-      this.treeService.growTree(tag.path, this.tree);
+      this.treeService.growTree(tag.id, tag.path, this.tree);
       this.treeService.placeTag(tag, this.tree);
       this.treeComponent.treeModel.update();
       const nodeToExpand: TreeNode = this.treeComponent.treeModel.getNodeById(tag.id);
@@ -277,15 +304,24 @@ export class TbTagTreeComponent implements OnInit, OnDestroy {
   * Create a new folder
   */
   newFolder(data: any) {
-    let name: string;
+    let path: string;
     if (typeof(data) === 'object') {
-      name = data.target.value;
+      path = data.target.value;
     } else {
-      name = data;
+      path = data;
     }
-    this.treeService.growTree('/' + name, this.tree);
-    this.treeComponent.treeModel.update();
-    this.form.controls.folderInput.setValue('', {emitEvent: false});
+    this.tagService.createFolder(path, this.userId, this.objectId).subscribe(
+      resultPathTag => {
+        this.treeService.growTree(resultPathTag.id, resultPathTag.path, this.tree);
+        this.treeComponent.treeModel.update();
+        this.form.controls.folderInput.setValue('', {emitEvent: false});
+        this._newTag.next(resultPathTag);
+      },
+      errorPathTag => {
+        this.httpError.next(errorPathTag);
+        this.log.emit({module: 'tb-tag-lib', type: 'error', message_fr: `Impossible de créer le tag "${path}"`});
+      }
+    );
   }
 
   /**
@@ -295,23 +331,25 @@ export class TbTagTreeComponent implements OnInit, OnDestroy {
     this.tree = [];
 
     // get user's tags
+    this.isLoadingTags = true;
     let tags: Array<TbTag>;
     this.tagService.getUserTags(this.userId).subscribe(result => {
+      this.isLoadingTags = false;
       tags = result;
       if (tags.length > 0) {
-        tags.forEach(tag => { this.treeService.growTree(tag.path, this.tree); });
+        tags.forEach(tag => { this.treeService.growTree(tag.id, tag.path, this.tree); });
         tags.forEach(tag => { this.treeService.placeTag(tag, this.tree); });
         this.treeComponent.treeModel.update();
         this.treeComponent.treeModel.expandAll();
         this.treeComponent.sizeChanged();
       }
-    });
+    }, error => { this.isLoadingTags = false; });
   }
 
   redrawTree() {
     const tags = this.userTags;
     if (tags.length > 0) {
-      tags.forEach(tag => { this.treeService.growTree(tag.path, this.tree); });
+      tags.forEach(tag => { this.treeService.growTree(tag.id, tag.path, this.tree); });
       tags.forEach(tag => { this.treeService.placeTag(tag, this.tree); });
       this.treeComponent.treeModel.update();
       this.treeComponent.treeModel.expandAll();

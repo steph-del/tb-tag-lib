@@ -8,6 +8,8 @@ import { TbTag } from '../_models/tbtag.model';
 import { TbTagService } from '../_services/tb-tag-lib.service';
 import { TreeService } from '../_services/tb-tree.service';
 
+import * as _ from 'lodash';
+
 @Component({
   selector: 'tb-tag',
   templateUrl: './tb-tag.component.html',
@@ -282,6 +284,14 @@ export class TbTagComponent implements OnInit {
 
   treeComponentHttpError(error: any) {
     this.httpError.next(error);
+  }
+
+  getTagName(tag: TbTag): string {
+    if (tag.name) {
+      return tag.name;
+    } else if (tag.path) {
+      return _.last(_.split(tag.path, '/'));
+    }
   }
 
   /**

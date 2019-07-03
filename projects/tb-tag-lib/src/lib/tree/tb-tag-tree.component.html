@@ -60,13 +60,13 @@
           <div class="inline" *ngIf="!node.data.isEditable" (click)="switchExpandedNode(node)">
             <mat-icon class="mat-icon-inside-tree" *ngIf="node.data.isLeaf">local_offer</mat-icon>
             <mat-icon class="mat-icon-inside-tree" *ngIf="node.data.isFolder">folder_open</mat-icon>
-            <span>{{ node.data.name }}</span>
+            <span>{{ node.data.name }} [{{node.data.id}}]</span>
           </div>
           
           <div class="inline" *ngIf="node.data.isEditable && node.data.isEditing ===  false" (click)="switchExpandedNode(node)">
             <mat-icon class="mat-icon-inside-tree" *ngIf="node.data.isLeaf">local_offer</mat-icon>
             <mat-icon class="mat-icon-inside-tree" *ngIf="node.data.isFolder">folder_open</mat-icon>
-            <span>{{ node.data.name }}</span>
+            <span>{{ node.data.name }} [{{node.data.id}}]</span>
             <div class="spacer"> </div>
             <mat-icon class="mat-icon-inside-tree action" (click)="editTagName(node)">edit</mat-icon>
             <!--<mat-icon class="mat-icon-inside-tree action" (click)="deleteTag(node)">delete</mat-icon>-->
@@ -89,3 +89,5 @@
     </div>
   </ng-template>
 </tree-root>
+<div *ngIf="isLoadingTags" class="spinner loading_tags"><mat-spinner diameter="16"></mat-spinner> Chargement de l'arborescence...</div>
+<div *ngIf="isMovingNode || tagService.isPatchingPaths" class="spinner moving_tags"><mat-spinner diameter="16"></mat-spinner>Veuillez patienter...</div>

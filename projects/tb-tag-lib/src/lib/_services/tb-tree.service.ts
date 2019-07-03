@@ -19,7 +19,7 @@ export class TreeService {
   /**
   * Make tree. Path can be added at any time
   */
-  growTree(path: string, tree: Array<any>, _isEditable: boolean = true): any {
+  growTree(id: number, path: string, tree: Array<any>, _isEditable: boolean = true): any {
     // replace several spaces
     path = path.replace(/\s\s+/g, ' ');
 
@@ -76,7 +76,7 @@ export class TreeService {
         });
         if (found === false) {
           i0 = j;
-          _tree[i0] = { path: _parentTags, isFolder: true, isLeaf: false, isEditing: false, isEditable: _isEditable, name: _tag, level: i, children: [] };
+          _tree[i0] = { id, path: _parentTags, isFolder: true, isLeaf: false, isEditing: false, isEditable: _isEditable, name: _tag, level: i, children: [] };
         }
 
       // second tag level
@@ -93,7 +93,7 @@ export class TreeService {
         if (found === false) {
           i1 = k;
           _tree[i0].children.push(
-            { path: _parentTags, isFolder: true, isLeaf: false, isEditing: false, isEditable: _isEditable, name: _tag, level: i, children: []}
+            { id, path: _parentTags, isFolder: true, isLeaf: false, isEditing: false, isEditable: _isEditable, name: _tag, level: i, children: []}
           );
         }
 
@@ -111,7 +111,7 @@ export class TreeService {
         if (found === false) {
           i2 = l;
           _tree[i0].children[i1].children.push(
-            { path: _parentTags, isFolder: true, isLeaf: false, isEditing: false, isEditable: _isEditable, name: _tag, level: i, children: []}
+            { id, path: _parentTags, isFolder: true, isLeaf: false, isEditing: false, isEditable: _isEditable, name: _tag, level: i, children: []}
           );
         }
 
@@ -128,7 +128,7 @@ export class TreeService {
         }
         if (found === false) {
           _tree[i0].children[i1].children[i2].children.push(
-            { path: _parentTags, isFolder: true, isLeaf: false, isEditing: false, isEditable: _isEditable, name: _tag, level: i, children: []}
+            { id, path: _parentTags, isFolder: true, isLeaf: false, isEditing: false, isEditable: _isEditable, name: _tag, level: i, children: []}
           );
         }
       }
@@ -143,6 +143,8 @@ export class TreeService {
   placeTag(tag: TbTag, tree: Array<any>, _isEditable: boolean = true): any {
     let path: string = tag.path;
     let tagName: string = tag.name;
+
+    if (!tagName) { return; }
 
     // replace several spaces
     path = path.replace(/\s\s+/g, ' ');
