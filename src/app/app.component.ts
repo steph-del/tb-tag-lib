@@ -10,7 +10,10 @@ import { TbLog } from 'projects/tb-tag-lib/src/lib/_models/tb-log.model';
 })
 export class AppComponent {
 
-  public basicTags = [/*
+  tagObjectId = 10;
+  enabled = true;
+
+  public basicTags = [
     {path: 'Organes', name: 'Fleur', id: null, userId: null},
     {path: 'Organes', name: 'Feuille', id: null, userId: null},
     {path: 'Organes', name: 'Fruit', id: null, userId: null},
@@ -25,8 +28,10 @@ export class AppComponent {
     {path: 'Photo', name: 'Planche', id: null, userId: null},
     {path: 'Photo', name: 'Dessin', id: null, userId: null},
     {path: 'Morphologie', name: 'Plantule', id: null, userId: null},
-    {path: 'Morphologie', name: 'Rosette', id: null, userId: null},*/
+    {path: 'Morphologie', name: 'Rosette', id: null, userId: null},
   ];
+
+  public basicTags2 = [];
 
   log(log: TbLog) {
     if (log.type === 'info') {
@@ -51,5 +56,13 @@ export class AppComponent {
 
   updatedTag(tag: TbTag) {
     console.log('Updated tag (not registered in db)', tag);
+  }
+
+  changeObjId(): void {
+    this.tagObjectId++;
+  }
+
+  resetObjId(): void {
+    this.tagObjectId = 10;
   }
 }

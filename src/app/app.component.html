@@ -1,4 +1,5 @@
 
+<!--
 <tb-tag
 [userId]=22
 objectId=1
@@ -13,25 +14,32 @@ tagName="photoTag"
 tagEndpoint="/api/photo_tags"
 (log)="log($event)"></tb-tag>
 
+-->
 
+<tb-tag
+[userId]=22
+[basicTags]="basicTags"
+[objectId]="tagObjectId"
+baseApiUrl="http://localhost:8000"
+apiPath="/api/photo_tags"
+apiRelationPath="/api/photo_photo_tag_relations"
+apiRetrievePath="/api/photos/{id}/photo_tag_relations"
+apiTagsRelationsPath="/api/photo_tags/{id}/photo_relations"
+objectName="photo"
+objectEndpoint="/api/photos"
+tagName="photoTag"
+tagEndpoint="/api/photo_tags"
+(newTag)="newTag($event)"
+(removedTag)="removedTag($event)"
+(updatedTag)="updatedTag($event)"
+(log)="log($event)"></tb-tag>
+
+<button (click)="changeObjId()">change obj id</button>
+<button (click)="resetObjId()">reset obj id</button>
+<!--
 <tb-tag
 [userId]=22
 objectId=1
-[basicTags]="basicTags"
-baseApiUrl="http://localhost:8000"
-apiPath="/api/user_occurrence_tags"
-apiRelationPath="/api/occurrence_user_occurrence_tag_relations"
-apiRetrievePath="/api/occurrences/{id}/user_tag_relations"
-objectName="occurrence"
-objectEndpoint="/api/occurrences"
-tagName="userOccurrenceTag"
-tagEndpoint="/api/user_occurrence_tags"
-(log)="log($event)"></tb-tag>
-
-
-<tb-tag
-[userId]=22
-[basicTags]="basicTags"
 baseApiUrl="http://localhost:8000"
 apiPath="/api/user_occurrence_tags"
 apiRelationPath="/api/occurrence_user_occurrence_tag_relations"
@@ -41,7 +49,5 @@ objectEndpoint="/api/occurrences"
 tagName="userOccurrenceTag"
 tagEndpoint="/api/user_occurrence_tags"
 noApiCall="true"
-(newTag)="newTag($event)"
-(removedTag)="removedTag($event)"
-(updatedTag)="updatedTag($event)"
 (log)="log($event)"></tb-tag>
+-->
