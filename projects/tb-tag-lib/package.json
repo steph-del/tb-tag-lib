@@ -5,7 +5,7 @@
     "@angular/common": "^6.x",
     "@angular/core": "^6.x",
     "@angular/material": "^6.x",
-    "@angular/cdk": "^6.x",
+    "@angular/cdk": "^7.x",
     "angular-tree-component": "^8.0"
   }
 }

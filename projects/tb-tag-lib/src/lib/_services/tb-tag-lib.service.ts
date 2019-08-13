@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, of, Subject } from 'rxjs';
-import { map, tap, mergeMap } from 'rxjs/operators';
+import { Observable, of, Subject, BehaviorSubject } from 'rxjs';
+import { map, mergeMap } from 'rxjs/operators';
 import { TbTag } from '../_models/tbtag.model';
 
 import * as _ from 'lodash';
@@ -11,6 +11,7 @@ import * as _ from 'lodash';
 })
 export class TbTagService {
 
+  userId: number;
   baseApiUrl: string;
   apiRelationPath = '/api/photo_photo_tag_relations';
   apiRetrievePath = '/api/photos/{id}/photo_tag_relations';
@@ -23,176 +24,177 @@ export class TbTagService {
   public basicTags = [];
   public isPatchingPaths = false;
 
-  usersTags: Array<TbTag> = [];
-
-  treeMustBeUpdated = new Subject<boolean>();
+  usersTags = new BehaviorSubject<Array<TbTag>>([]);
 
   constructor(private http: HttpClient) { }
 
-  public setBasicTags(data: Array<TbTag>) {
-    this.basicTags = data;
-  }
-
-  public setBaseApiUrl(data): void {
-    this.baseApiUrl = data;
-  }
-
-  public setApiRelationPath(value: string): void {
-    this.apiRelationPath = value;
-  }
-
-  public setApiRetrievePath(value: string): void {
-    this.apiRetrievePath = value;
-  }
-
-  public setApiTagsRelationsPath(value: string): void {
-    this.apiTagsRelationsPath = value;
-  }
-
-  public setObjectName(value: string): void {
-    this.objectName = value;
-  }
-
-  public setObjectEndpoint(value: string): void {
-    this.objectEndpoint = value;
-  }
-
-  public setTagName(value: string): void {
-    this.tagName = value;
-  }
-
-  public setTagEndpoint(value: string): void {
-    this.tagEndpoint = value;
-  }
-
-  public setUsersTags(tags: Array<TbTag>): void {
-    this.usersTags = tags;
-  }
+  public setBasicTags(data: Array<TbTag>) { this.basicTags = data; }
+  public setBaseApiUrl(data): void { this.baseApiUrl = data; }
+  public setApiRelationPath(value: string): void { this.apiRelationPath = value; }
+  public setApiRetrievePath(value: string): void { this.apiRetrievePath = value; }
+  public setApiTagsRelationsPath(value: string): void { this.apiTagsRelationsPath = value; }
+  public setObjectName(value: string): void { this.objectName = value; }
+  public setObjectEndpoint(value: string): void { this.objectEndpoint = value; }
+  public setTagName(value: string): void { this.tagName = value; }
+  public setTagEndpoint(value: string): void { this.tagEndpoint = value; }
+  public setUsersTags(tags: Array<TbTag>): void { this.usersTags.next(tags); }
+  public setUserId(userId: number): void { this.userId = userId; }
 
   getBasicTags(): Observable<Array<TbTag>> {
-    return of(this.basicTags);
-  }
-
-  public getBasicTagsByPath() {
-    const categories: Array<string> = this.getUniqueBasicTagsPaths();
-    const response: any = [];
-    let i = 0;
-    categories.forEach(category => {
-      response[i] = [];
-      for (const bTag of this.basicTags) {
-        if (bTag.path === category) {
-          response[i].push(bTag);
-        }
-      }
-      i++;
-    });
-    return of(response);
-  }
-
-  public getUniqueBasicTagsPaths() {
-    const tagPaths: string[] = [];
-    let i = 0;
-    for (const tag of this.basicTags) {
-      if (i === 0) {
-        tagPaths.push(tag.path);
-      } else {
-        if (tagPaths.indexOf(tag.path) === -1) {
-          tagPaths.push(tag.path);
-        }
-      }
-      i++;
+    if (this.basicTags) {
+      return of(this.basicTags);
+    } else {
+      return of(null);
     }
-    return tagPaths;
   }
 
   getUserTags(userId: number): Observable<Array<TbTag>> {
-    // Call API and get user's tags
-    return this.http.get(`${this.baseApiUrl}${this.tagEndpoint}.json`).pipe(
-      map(r => <Array<TbTag>>r),
-      tap(r => this.setUsersTags(r))
+    return this.http.get<Array<TbTag>>(`${this.baseApiUrl}${this.tagEndpoint}.json`).pipe(
+      map(tags => this.cleanTags(tags))
     );
   }
+  /*
+  getUserTags(userId: number): Observable<Array<TbTag>> {
 
-  getObjTags(objectId: number): Observable<any> {
-    const headers = {
-      'content-type': 'application/ld+json',
-      'accept': 'application/json'
-    };
+    const uTags =  [
+      { id: 17, userId: 22, name: 'feuille',             path: '/'},
+      { id: 18, userId: 22, name: 'Projets coopératifs', path: '/'},
+      { id: 19, userId: 22, name: 'Sub2',                path: '/projets cooperatifs/'},
+      { id: 13, userId: 22, name: 'Sauvages',            path: '/projets cooperatifs/sub2/'},
+      { id: 14, userId: 22, name: 'aDeterminer',         path: '/'},
+      { id: 15, userId: 22, name: 'WidgetSaisie',        path: '/projets cooperatifs/'},
+      { id: 16, userId: 22, name: 'Sub 3',               path: '/projets cooperatifs/sub2/'},
+      { id: 17, userId: 22, name: 'Pollinisation',       path: '/projets cooperatifs/sub2/sub 3/'},
+    ];
+    this.usersTags.next(this.cleanTags(uTags));
+  }
+  */
 
-    return this.http.get(`${this.baseApiUrl}${this.apiRetrievePath.replace('{id}', objectId.toString())}`, {headers})
-    .pipe(
-      map(results => results as Array<any>),
-      map(results => {
-        const tags = [];
-        for (const result of results) {
-          tags.push(result[this.tagName]);
-        }
-        return of(tags);
-      })
-    );
+  // *******
+  // TAGS...
+  // *******
+  /**
+   * Replace path values with accents and majuscules
+   */
+  cleanTags(tags: Array<TbTag>): Array<TbTag> {
+    const names = tags.map(t => t.name);
+    const paths = tags.map(t => t.path.split('/')).filter(el => !this.isEmptyArray(el)).map(a => this.removeEmptyStringInArray(a));
+    const uniquPaths = this.flattenStringArray(paths).filter((v, i, a) => a.indexOf(v) === i); // filter removes duplicate entries
+
+    let namesTable: Array<[string, string]>;
+    for (const n of names) {
+      if (namesTable && namesTable.length > 0) { namesTable.push([n, this.removeAccentAndUpperCase(n)]); } else { namesTable = [[n, this.removeAccentAndUpperCase(n)]]; }
+    }
+
+    for (const item of tags) {
+      for (const name of namesTable) {
+        if (item.path.indexOf(name[1]) !== -1) { item.path = item.path.replace(name[1], name[0]); }
+      }
+    }
+
+    return tags;
   }
 
-  getTagsRelations(objectId: number): Observable<Array<any>> {
-    const headers = {};
-    return this.http.get<Array<any>>(`${this.baseApiUrl}${this.apiTagsRelationsPath.replace('{id}', objectId.toString())}.json`, {headers});
+  private isEmptyArray(array: Array<string>): boolean {
+    for (const item of array) {
+      if (item !== '') { return false; }
+    }
+    return true;
+  }
+
+  private removeEmptyStringInArray(array: Array<string>): Array<string> {
+    const responseArray: Array<string> = [];
+    for (const item of array) {
+      if (item !== '') { responseArray.push(item); }
+    }
+    return responseArray;
+  }
+
+  private flattenStringArray(array: Array<Array<string>>): Array<string> {
+    const responseArray: Array<string> = [];
+    for (const items of array) {
+      for (const item of items) {
+        responseArray.push(item);
+      }
+    }
+    return responseArray;
+  }
+
+  private removeAccentAndUpperCase(str: string): string {
+    return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  }
+
+  // *********
+  // TREE CRUD
+  // *********
+
+  /**
+   * Build a nested tree structure object from simple tags with inline 'path' and 'name' data
+   * @param tags an array of TbTag objects
+   */
+  buildTree(_tags: Array<TbTag>): Array<TbTag> {
+    const tags = _.cloneDeep(_tags);
+
+    // Set tag depth
+    for (const tag of tags) { tag.depth = tag.path.split('/').filter(t => t !== '').length; }
+
+    // Group tags by depth
+    const tagsGroupedByLength = _.groupBy(tags, 'depth');
+
+    // Result init
+    const resultTags: Array<TbTag> = [];
+
+    // 0 depth
+    for (const tag of tagsGroupedByLength[0]) {
+      resultTags.push(tag);
+    }
+
+    // 1...x depth
+    for (let index = 1; index < Object.keys(tagsGroupedByLength).length; index++) {
+      for (const tag of tagsGroupedByLength[index]) {
+        const arrayPaths = tag.path.split('/').filter(p => p !== '');
+        const parentTag = _.find(tagsGroupedByLength[index - 1], t => t.name === arrayPaths[index - 1]);
+        !parentTag.children || parentTag.children.length === 0 ? parentTag.children = [tag] : parentTag.children.push(tag);
+      }
+    }
+
+    return resultTags;
+  }
+
+  // ********
+  // TAG CRUD
+  // ********
+  createTag(name: string, path: string): Observable<TbTag> {
+    return of(null);
   }
 
   removeTag(tag: TbTag): Observable<any> {
-    // call API
-    return this.http.delete<any>(`${this.baseApiUrl}${this.tagEndpoint}/${tag.id}`);
+    return of(null);
   }
 
   updateTag(tag: TbTag): Observable<TbTag> {
-    // update existing tag through API
-    if (tag.name) {
-      return this.http.patch<TbTag>(`${this.baseApiUrl}${this.tagEndpoint}/${tag.id}`, {name: tag.name, path: tag.path});
-    } else {
-      return this.http.patch<TbTag>(`${this.baseApiUrl}${this.tagEndpoint}/${tag.id}`, {path: tag.path});
-    }
+    return of(null);
   }
 
+  // ************************
+  // OBJECTS - TAGS RELATIONS
+  // ************************
   /**
-   * When a folder is renamed, all children tags must be updated
+   * GET tags related to a specific object by its id
+   * @param objectId number
    */
-  rewriteTagsPaths(path: string, newPath: string): void {
-    this.isPatchingPaths = true;
-    let tagsToUpdateCount = 0;
-    let updatedTags = 0;
-    this.usersTags.forEach(tagMayBeUpdated => {
-      if (tagMayBeUpdated.path === path) {
-        tagsToUpdateCount++;
-        tagMayBeUpdated.path = newPath;
-        this.updateTag(tagMayBeUpdated).subscribe(
-          success => {
-            this.isPatchingPaths = false;
-            updatedTags++;
-            if (updatedTags === tagsToUpdateCount) {
-              // reset tree
-              this.treeMustBeUpdated.next(true);
-            }
-          },
-          error => {
-            this.isPatchingPaths = false;
-            // Can't do anything inside the service !
-           }
-        );
-      }
-    });
+  getObjectRelations(objectId: number): Observable<any> {
+    const apiPath = this.baseApiUrl + this.apiRetrievePath.replace('{id}', objectId.toString());
+    const headers = {'content-type': 'application/ld+json', 'accept': 'application/json'};
+    return this.http.get(apiPath, {headers});
   }
 
-  createTag(name: string, path: string, userId: number, objectId: number): Observable<TbTag> {
-    // Call API
-    return this.http.post<TbTag>(`${this.baseApiUrl}${this.tagEndpoint}`, {name: name, path: path, userId: userId});
+  isTagRelatedToObject(objectId: number, tagId: number): boolean {
+    return false;
   }
 
-  createFolder(path: string, userId: number, objectId: number): Observable<TbTag> {
-    if (_.take(path)[0] !== '/') { path = '/' + path; }
-    return this.http.post<TbTag>(`${this.baseApiUrl}${this.tagEndpoint}`, {path, userId: userId});
-  }
-
-  updateFolder(tag: TbTag): Observable<TbTag> {
-    if (_.take(tag.path)[0] !== '/') { tag.path = '/' + tag.path; }
-    return this.http.patch<TbTag>(`${this.baseApiUrl}${this.tagEndpoint}/${tag.id}`, {path: tag.path});
+  getTagsRelationsToObjects(objectId: number): Observable<Array<any>> {
+    return of(null);
   }
 
   linkTagToObject(tagId: number, objectId: number): Observable<any> {

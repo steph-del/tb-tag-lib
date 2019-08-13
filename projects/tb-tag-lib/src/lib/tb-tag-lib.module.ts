@@ -3,9 +3,12 @@ import { BrowserModule } from '@angular/platform-browser';
 import { HttpClientModule } from '@angular/common/http';
 import { ReactiveFormsModule } from '@angular/forms';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
-import { MatInputModule, MatAutocompleteModule, MatProgressSpinnerModule, MatChipsModule, MatIconModule, MatDialogModule, MatButtonModule, MatMenuModule, MatSnackBarModule } from '@angular/material';
+import { MatInputModule, MatAutocompleteModule, MatProgressSpinnerModule, MatChipsModule, MatIconModule,
+         MatDialogModule, MatButtonModule, MatMenuModule, MatSnackBarModule,
+        MatCheckboxModule, MatFormFieldModule, MatTreeModule, MatListModule } from '@angular/material';
+import { DragDropModule } from '@angular/cdk/drag-drop';
 
-import { TbTagTreeComponent, DialogDeleteTagComponent } from './tree/tb-tag-tree.component';
+import { TbTagTreeComponent } from './tree/tb-tag-tree.component';
 import { TbTagComponent } from './tag/tb-tag.component';
 import { TreeModule } from 'angular-tree-component';
 
@@ -18,10 +21,12 @@ import { TreeService } from './_services/tb-tree.service';
     BrowserAnimationsModule,
     HttpClientModule,
     TreeModule.forRoot(),
-    MatInputModule, MatAutocompleteModule, MatProgressSpinnerModule, MatChipsModule, MatIconModule, MatDialogModule, MatButtonModule, MatMenuModule, MatSnackBarModule
+    MatInputModule, MatAutocompleteModule, MatProgressSpinnerModule, MatChipsModule, MatIconModule, MatDialogModule,
+    MatButtonModule, MatMenuModule, MatSnackBarModule, MatCheckboxModule, MatFormFieldModule, MatTreeModule, MatListModule,
+    DragDropModule
   ],
-  entryComponents: [DialogDeleteTagComponent],
-  declarations: [TbTagTreeComponent, TbTagComponent, DialogDeleteTagComponent],
+  entryComponents: [],
+  declarations: [TbTagTreeComponent, TbTagComponent],
   exports: [TbTagTreeComponent, TbTagComponent]
 })
 export class TbTagLibModule {

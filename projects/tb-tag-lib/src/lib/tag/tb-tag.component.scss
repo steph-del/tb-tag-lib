@@ -1,28 +1,23 @@
-.tag-container {
-  text-align: center;
-  /deep/.mat-chip-list-wrapper {
-    display: block;
-  }
-  .tagSpinner {
-    margin-left: 10px;
-  }
-
-  .basicTagsByCategories {
-    border: 1px solid #F0F0F0;
-    padding: 10px;
-    padding-top: 0;
-    margin-top: 15px;
-    .category {
-      color: grey;
-      font-variant: small-caps;
-      padding-bottom: 10px;
-    }
+@import '~@angular/material/theming';
+.mat-tree-node {
+  background-color: white;
+  user-select: none;
+  cursor: move;  
+  &.cdk-drag-preview { // while dragging
+    @include mat-elevation(12);
+  }  &.cdk-drag-placeholder { // potential drop area
+    opacity: 0;
   }
 }
-.loadingTags {
-  display: flex;
-  justify-content: center;
-  mat-spinner {
-    margin-right: 5px;
-  }
+.drag-placeholder {
+  @include mat-elevation(12);
+  border: 2px dashed grey;
+}
+/* items moving away to make room for drop */
+.cdk-drop-list-dragging .mat-tree-node:not(.cdk-drag-placeholder) {
+  transition: transform 250ms cubic-bezier(0, 0, 0.2, 1);
+}
+/* item being dropped */
+.cdk-drag-animating {
+  transition: transform 200ms cubic-bezier(0, 0, 0.2, 1);
 }

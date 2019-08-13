@@ -1,21 +1,24 @@
 import { Component, OnInit, Input, Output, EventEmitter, OnChanges, SimpleChanges } from '@angular/core';
 import { FormBuilder } from '@angular/forms';
 
-import { Observable } from 'rxjs';
+import { Observable, BehaviorSubject } from 'rxjs';
 
 import { TbLog } from '../_models/tb-log.model';
 import { TbTag } from '../_models/tbtag.model';
 import { TbTagService } from '../_services/tb-tag-lib.service';
-import { TreeService } from '../_services/tb-tree.service';
 
 import * as _ from 'lodash';
+import { FlatTreeControl } from '@angular/cdk/tree';
+import { MatTreeFlattener, MatTreeFlatDataSource } from '@angular/material/tree';
+import { CdkDragDrop } from '@angular/cdk/drag-drop';
+import { flatMap, map } from 'rxjs/operators';
 
 @Component({
   selector: 'tb-tag',
   templateUrl: './tb-tag.component.html',
   styleUrls: ['./tb-tag.component.scss']
 })
-export class TbTagComponent implements OnInit, OnChanges {
+export class TbTagComponent implements OnInit {
   //
   // INPUT / OUTPUT
   //
@@ -24,8 +27,8 @@ export class TbTagComponent implements OnInit, OnChanges {
   @Input() set objectId(data: number) {
     this._objectId = data;
   }
-  @Input() baseApiUrl = 'http://localhost:8000';
-  @Input() noApiCall = false;
+  @Input() baseApiUrl = 'http://localhost:8001';
+  // ??? Input() noApiCall = false;
   @Input() objectName = 'photo';
   @Input() objectEndpoint = '/api/photos';
   @Input() tagName = 'photoTag';
@@ -34,7 +37,7 @@ export class TbTagComponent implements OnInit, OnChanges {
   @Input() apiRetrievePath = '/api/photos/{id}/photo_tag_relations';
   @Input() apiTagsRelationsPath = '/api/photo_tags/{id}/photo_relations';
   @Input() set basicTags(data: Array<TbTag>) {
-    this.basicTagsSet = true;
+    // this.basicTagsSet = true;
     this._basicTags = data;
     this.tagService.setBasicTags(data);
   }
@@ -44,32 +47,51 @@ export class TbTagComponent implements OnInit, OnChanges {
   @Output() log = new EventEmitter<TbLog>();
   @Output() httpError = new EventEmitter<any>();
 
-  _basicTags: Array<TbTag> = [];
+  _basicTags: Array<TbTag>;
   _objectId: number;
-  basicTagsByCategory: Array<Array<TbTag>> = [];
-  basicTagsSet = false;
-  userTags: Array<TbTag> = [];
-  objTgs: Array<TbTag> = [];
-  filteredUserTags: Observable<TbTag[]>;
+  userTags: Array<TbTag>;
+  userTagsObservable = new BehaviorSubject<Array<TbTag>>([]);
+  objectsTags: Array<TbTag> = [];
   isLoadingBasicTags = false;
   isLoadingUsersTags = false;
-  cantLoadUsersTags = false;
-  showTree = false;
+
+  tree: Array<TbTag> = [];
+  treeDataSource: MatTreeFlatDataSource<any, any>;
+  expandedNodeSet = new Set<string>();
+  dragging = false;
+  expandTimeout: any;
+  expandDelay = 1000;
+  treeDisabled = false;
+
+  _transformer = (node: TreeNode, level: number) => {
+    return new TreeFlatNode(
+      node.id.toString(),
+      !!node.children && node.children.length > 0,
+      node.name,
+      node.path,
+      level,
+      node.type,
+      node.selected
+    );
+  }
+
+  // tslint:disable-next-line:member-ordering
+  treeFlattener = new MatTreeFlattener(this._transformer, node => node.level, node => node.expandable, node => node.children);
+  // tslint:disable-next-line:member-ordering
+  treeControl = new FlatTreeControl<TreeFlatNode>(node => node.level, node => node.expandable);
 
   constructor(
     private tagService: TbTagService,
-    private treeService: TreeService,
     private fb: FormBuilder) { }
+
 
   ngOnInit() {
     // objectId provided ?
-    if (!this._objectId && !this.noApiCall) {
+    if (!this._objectId/* && !this.noApiCall*/) {
       this.log.emit({module: 'tb-tag-lib', type: 'error', message_fr: 'Vous devez fournir un objectId pour initialiser le module'});
     }
 
-    if (!this.basicTagsSet) { this.tagService.setBasicTags([]); }
-
-    // Set API urls
+    // Set API urls (bind data to tag service)
     this.tagService.setBaseApiUrl(this.baseApiUrl);
     this.tagService.setApiRelationPath(this.apiRelationPath);
     this.tagService.setApiRetrievePath(this.apiRetrievePath);
@@ -78,230 +100,150 @@ export class TbTagComponent implements OnInit, OnChanges {
     this.tagService.setObjectEndpoint(this.objectEndpoint);
     this.tagService.setTagName(this.tagName);
     this.tagService.setTagEndpoint(this.tagEndpoint);
-    // Set userId available
-    this.treeService.setUserId(this.userId);
+    this.tagService.setUserId(Number(this.userId));
 
-    // get object (ie photo) tags
-    if (this._objectId) {
-      this.getObjTags();
-    }
+    this.treeDataSource = new MatTreeFlatDataSource(this.treeControl, this.treeFlattener);
 
-    // Get tags
-    this.getTags(this.userId);
-
-  }
-
-  ngOnChanges(changes: SimpleChanges): void {
-    if (changes.objectId && changes.objectId.firstChange === false) {
-      this.getObjTags();
-    }
-  }
-
-  getObjTags(): void {
-    this.tagService.getObjTags(this._objectId).subscribe(
-      result => {
-        this.objTgs = result['value'];
-      },
-      error => {
-        this.httpError.next(error);
+    // User tags subscriber
+    this.userTagsObservable.subscribe(
+      newUserTags => {
+        // update tree
+        if (newUserTags.length > 0) {
+          this.rebuildTreeForData(this.tagService.buildTree(newUserTags));
+        }
+      }, error => {
+        //
       }
+    );
+
+    // Start by getting both user tags and related object tags
+    let _uTags: Array<TbTag>; // user tags
+    let _oTags: any;          // object related tags
+    this.tagService.getUserTags(this.userId).pipe(
+      flatMap(uTags => {
+        _uTags = uTags;
+        return this.tagService.getObjectRelations(this._objectId);
+      })
+    ).subscribe(
+      oTags => {
+        _oTags = _.map(oTags, o => o[`${this.objectName}Tag`]);
+        for (const uT of _uTags) {
+          if (_.find(_oTags, oT => oT.id === uT.id)) { uT.selected = true; }
+        }
+        this.tree = this.tagService.buildTree(_uTags);
+        this.userTagsObservable.next(_uTags);
+      },
+      error => console.log(error)
+    );
+  }
+
+  // *********
+  // USER TAGS
+  // *********
+  // this.userTagsObservable;
+
+  // ********
+  // TAG CRUD
+  // ********
+  getUserTags(): void {
+    this.tagService.getUserTags(this.userId).subscribe(
+      uTags => this.userTagsObservable.next(uTags),
+      error => console.log(error)
     );
   }
 
   /**
-   * Get basic and user's tags
+   * When user click on a basic tag
    */
-  getTags(userId: number): void {
-    this.userTags = [];
-    // Get basic tags
-    this.isLoadingBasicTags = true;
-    this.tagService.getBasicTags().subscribe(_tags => {
-      this.log.emit({module: 'tb-tag-lib', type: 'info', message_fr: `Les tags par défaut ont bien été chargés`});
-      this.isLoadingBasicTags = false;
-      this.basicTags = _tags;
-    }, error => {
-      this.httpError.next(error);
-      this.isLoadingBasicTags = false;
-      this.log.emit({module: 'tb-tag-lib', type: 'error', message_fr: `Les tags par défaut n'ont pas pu être chargés`});
-    });
-
-    this.tagService.getBasicTagsByPath().subscribe(_tags => this.basicTagsByCategory = _tags);
-
-    // Get user's tags
-    this.isLoadingUsersTags = true;
-    this.tagService.getUserTags(userId).subscribe(_tags => {
-      this.log.emit({module: 'tb-tag-lib', type: 'info', message_fr: `Les tags utilisateurs ont bien été chargés`});
-      this.isLoadingUsersTags = false;
-      this.userTags = this.userTags.concat(_tags);
-    }, error => {
-      this.isLoadingUsersTags = false;
-      this.cantLoadUsersTags = true;
-      this.log.emit({module: 'tb-tag-lib', type: 'error', message_fr: `Les tags utilisateurs n'ont pas pu être chargés`});
-    });
+  basicTagClicked(bTag: TbTag): void {
+    console.log(bTag);
   }
 
   /**
-   * When user select a tag, link it to the photo and emit the tag
+   * When user click on an user's tag
    */
-  linkTag(tag: TbTag): void {
-    if (this._objectId && (!this.basicTagAlreadyUsed(tag) || !this.userTagAlreadyUsed(tag))) {
-      tag.pending = true;
-      this.tagService.linkTagToObject(tag.id, this._objectId).subscribe(
-        success => {
-          this.objTgs.push(tag);
-          this.log.emit({module: 'tb-tag-lib', type: 'success', message_fr: `Le tag "${tag.name}" est ajouté à votre photo`});
-          tag.pending = false;
-        },
-        error => {
-          this.httpError.next(error);
-          tag.pending = false;
-          this.log.emit({module: 'tb-tag-lib', type: 'error', message_fr: `Impossible de lier le tag "${tag.name}" à votre photo`});
-        }
-      );
-    } else if (!this._objectId && this.noApiCall) {
-      this.objTgs.push(tag);
-      this.newTag.next(tag);
-    }
-  }
+  userTagSelectionChange(uTag: TbTag): void {
+    const clonedUserTags = this.cloneTags(this.userTagsObservable.getValue());
+    const clonedUTag = this.findTagById(clonedUserTags, uTag.id);
+    const nodeTagInArray = this.findTagById(this.treeDataSource.data, uTag.id);
 
-  /**
-   * When user unselect a tag, unlink it to the photo and emit the tag
-   */
-  unlinkTag(tag: TbTag): void {
-    if (this._objectId) {
-      tag.unlinking = true;
-      this.tagService.unlinkTagToObject(tag.id, this._objectId).subscribe(
-        success => {
-          let i = 0;
-          this.objTgs.forEach(objTag => {
-            if (objTag.id === tag.id) { this.objTgs.splice(i, 1); }
-            i++;
-          });
-          tag.unlinking = false;
+    if (clonedUTag.selected) {
+      // unlink to object
+      uTag.unlinking = true;
+      nodeTagInArray.unlinking = true;
+      this.tagService.unlinkTagToObject(clonedUTag.id, this._objectId).subscribe(
+        result => {
+          clonedUTag.selected = false;
+          uTag.unlinking = false;
+          nodeTagInArray.unlinking = false;
+          this.userTagsObservable.next(clonedUserTags);
         }, error => {
-          this.httpError.next(error);
-          tag.unlinking = false;
-          this.log.emit({module: 'tb-tag-lib', type: 'error', message_fr: `Impossible de supprimer le lien entre le tag "${tag.name}" et votre photo`});
+          uTag.unlinking = false;
+          nodeTagInArray.unlinking = false;
         }
       );
-    } else if (!this._objectId && this.noApiCall) {
-      let i = 0;
-      this.objTgs.forEach(objTag => {
-        if (objTag.name === tag.name && objTag.path === tag.path) { this.objTgs.splice(i, 1); }
-        i++;
-      });
-      this.removedTag.next(tag);
+    } else {
+      // link to object
+      uTag.linking = true;
+      nodeTagInArray.linking = true;
+      this.tagService.linkTagToObject(clonedUTag.id, this._objectId).subscribe(
+        result => {
+          // reload tree
+          clonedUTag.selected = true;
+          uTag.linking = false;
+          nodeTagInArray.linking = false;
+          this.userTagsObservable.next(clonedUserTags);
+        }, error => {
+          console.log(error);
+          uTag.linking = false;
+          nodeTagInArray.linking = false;
+        }
+      );
     }
   }
+
+  public cloneTags(tags: Array<TbTag>): Array<TbTag> {
+    return _.cloneDeep(tags);
+  }
+
+  public findTagById(tags: Array<TbTag>, id: number): TbTag {
+    let result, subResult;
+    tags.forEach(tag => {
+      if (Number(tag.id) === Number(id)) {
+        result = tag;
+      } else if (tag.children) {
+        subResult = this.findTagById(tag.children, id);
+        if (subResult) { result = subResult; }
+      }
+    });
+    return result;
+  }
+
+  /**
+   * When user create a new tag
+   * @param node ?
+   * @param value entered by the user
+   */
+  createTag(node: TbTag, value: string) {
+    console.log(node, value);
+  }
+
+  // ************************
+  // TAGS AND RELATES OBJECTS
+  // ************************
 
   /**
    * When user select a basic tag, we create a new tag in db and then do the link
    */
-  addBasicTag(tag: TbTag) {
-    if (this.basicTagAlreadyUsed(tag)) { return; }
-    tag.pending = true;
-    tag.userId = this.userId;
-    // is tag already exists ?
-    let alreadyExistInDb = false;
-    let tagToLink: TbTag = null;
-    for (const uTag of this.userTags) {
-      if (uTag.name === tag.name && uTag.path === tag.path) { alreadyExistInDb = true; tagToLink = uTag; }
-    }
+  addBasicTagToUserTags(tag: TbTag) { }
 
-    if (this._objectId && alreadyExistInDb) {
-      tag.pending = false;
-      tagToLink.pending = true;
-      // We only link the tag
-      this.tagService.linkTagToObject(tagToLink.id, this._objectId).subscribe (
-        success => {
-          this.objTgs.push(tagToLink);
-          tagToLink.pending = false;
-        }, error => {
-          this.httpError.next(error);
-          tagToLink.pending = false;
-          this.log.emit({module: 'tb-tag-lib', type: 'error', message_fr: `Impossible de lier le tag "${tag.name}" à votre photo`});
-        }
-      );
-    } else if (this._objectId && !alreadyExistInDb) {
-      // We first create the tag and the link it
-      this.tagService.createTag(tag.name, tag.path, tag.userId, this._objectId).subscribe(
-        successTag => {
-          tag.pending = false;
-          successTag.pending = true;
-          this.userTags.push(successTag);
-          // link
-          this.tagService.linkTagToObject(successTag.id, this._objectId).subscribe(
-            success => {
-              this.objTgs.push(successTag);
-              tag.pending = false;
-              successTag.pending = false;
-            },
-            error => {
-              this.httpError.next(error);
-              successTag.pending = false;
-              this.log.emit({module: 'tb-tag-lib', type: 'error', message_fr: `Impossible de lier le tag "${tag.name}" à votre photo`});
-            }
-          );
-        }, error => {
-          this.httpError.next(error);
-          tag.pending = false;
-          this.log.emit({module: 'tb-tag-lib', type: 'error', message_fr: `Impossible de créer le tag "${tag.name}"`});
-        }
-      );
-    }
+  getTagColor(tag: TbTag): 'primary' | 'none' {
+    return tag.selected ? 'primary' : 'none';
   }
 
-  newTagFromTree(tag: TbTag) {
-    // this.objTgs.push(tag);
-    this.userTags.push(tag);
-    this.newTag.next(tag);
-  }
-
-  removedTagFromTree() {
-    this.getTags(this.userId);
-  }
-
-  toggleTree() {
-    this.showTree = !this.showTree;
-  }
-
-  basicTagAlreadyUsed(tag: TbTag): boolean {
-    if (this.objTgs.length > 0) {
-      for (const _tag of this.objTgs) {
-        if (tag.name === _tag.name && tag.path === _tag.path) { return true; }
-      }
-    }
-    return false;
-  }
-
-  userTagAlreadyUsed(tag: TbTag): boolean {
-    if (this.objTgs.length > 0) {
-      for (const _tag of this.objTgs) {
-        if (tag.id === _tag.id) { return true; }
-      }
-    }
-    return false;
-  }
-
-  getColor(tag: TbTag) {
-    if (this.basicTagAlreadyUsed(tag)) {
-      return 'primary';
-    } else {
-      return 'none';
-    }
-  }
-
-  treeComponentHttpError(error: any) {
-    this.httpError.next(error);
-  }
-
-  getTagName(tag: TbTag): string {
-    if (tag.name) {
-      return tag.name;
-    } else if (tag.path) {
-      return _.last(_.split(tag.path, '/'));
-    }
-  }
+  // *****
+  // OTHER
+  // *****
 
   /**
    * Bind tag-tree logs
@@ -310,4 +252,232 @@ export class TbTagComponent implements OnInit, OnChanges {
     this.log.emit(logMessage);
   }
 
+  // ******************
+  // DRAG & DROP EVENTS
+  // ******************
+
+  /**
+   * Handle the drop - here we rearrange the data based on the drop event,
+   * then rebuild the tree.
+   * */
+  drop(event: CdkDragDrop<string[]>) {
+    // construct a list of visible nodes, this will match the DOM.
+    const visibleNodes = this.visibleNodes();
+
+    // deep clone the data source so we can mutate it
+    const changedData = JSON.parse(JSON.stringify(this.treeDataSource.data));
+    const initialData: Array<TbTag> = JSON.parse(JSON.stringify(this.treeDataSource.data));
+    console.log('initialData :');
+    console.log(initialData);
+
+    // recursive find function to find siblings of node
+    function findNodeSiblings(arr: Array<any>, id: string): Array<any> {
+      let result, subResult;
+      arr.forEach(item => {
+        if (item.id.toString() === id) {
+          result = arr;
+        } else if (item.children) {
+          subResult = findNodeSiblings(item.children, id);
+          if (subResult) { result = subResult; }
+        }
+      });
+      return result;
+    }
+
+    // remove the node from its old place
+    const node = event.item.data;
+
+    // console.log('-------');
+    // console.log(findNodeSiblings(changedData, node.id));
+
+    const siblings = findNodeSiblings(changedData, node.id);
+    const siblingIndex = siblings.findIndex(n => n.id.toString() === node.id.toString());
+    const nodeToInsert: TreeNode = siblings.splice(siblingIndex, 1)[0];
+
+    // determine where to insert the node
+    const nodeAtDest = visibleNodes[event.currentIndex];
+    if (nodeAtDest.id === nodeToInsert.id) { return; }
+
+    // determine drop index relative to destination array
+    let relativeIndex = event.currentIndex; // default if no parent
+    const nodeAtDestFlatNode = this.treeControl.dataNodes.find(n => nodeAtDest.id.toString() === n.id);
+    const parent = this.getParentNode(nodeAtDestFlatNode);
+    if (parent) {
+      const parentIndex = visibleNodes.findIndex(n => n.id.toString() === parent.id) + 1;
+      relativeIndex = event.currentIndex - parentIndex;
+    }
+
+    // get siblings
+    const newSiblings = findNodeSiblings(changedData, nodeAtDest.id.toString());
+
+    // get node destination
+    const nodeDestination = visibleNodes[event.currentIndex]; // OK !!!
+
+    console.log('node destination :');
+    console.log(nodeDestination);
+
+    // API CALL... THEN INSERT NODE AND REBUILD TREE IF SUCCESS
+    this.treeDisabled = true;
+    setTimeout(() => {
+      // insert node
+      newSiblings.splice(relativeIndex, 0, nodeToInsert);
+
+      // rebuild tree with mutated data
+      this.rebuildTreeForData(changedData);
+
+      this.treeDisabled = false;
+    }, 1000);
+
+  }
+
+  /**
+   * This constructs an array of nodes that matches the DOM,
+   * and calls rememberExpandedTreeNodes to persist expand state
+   */
+  visibleNodes(): TreeNode[] {
+    this.rememberExpandedTreeNodes(this.treeControl, this.expandedNodeSet);
+    const result = [];
+
+    function addExpandedChildren(node: TreeNode, expanded: Set<string>) {
+      result.push(node);
+      if (node.children && expanded.has(node.id.toString())) {
+        node.children.map(child => addExpandedChildren(child, expanded));
+      }
+    }
+    this.treeDataSource.data.forEach(node => {
+      addExpandedChildren(node, this.expandedNodeSet);
+    });
+    console.log('visible nodes :');
+    console.log(result);
+    return result;
+  }
+
+  // tslint:disable-next-line:no-shadowed-variable
+  hasChild = (_: number, node: TreeFlatNode) => node.expandable;
+
+  /**
+   * The following methods are for persisting the tree expand state
+   * after being rebuilt
+   */
+
+  rebuildTreeForData(data: any) {
+    this.rememberExpandedTreeNodes(this.treeControl, this.expandedNodeSet);
+    this.treeDataSource.data = data;
+    this.forgetMissingExpandedNodes(this.treeControl, this.expandedNodeSet);
+    this.expandNodesById(this.treeControl.dataNodes, Array.from(this.expandedNodeSet));
+  }
+
+  private rememberExpandedTreeNodes(
+    treeControl: FlatTreeControl<TreeFlatNode>,
+    expandedNodeSet: Set<string>
+  ) {
+    if (treeControl.dataNodes) {
+      treeControl.dataNodes.forEach((node) => {
+        if (treeControl.isExpandable(node) && treeControl.isExpanded(node)) {
+          // capture latest expanded state
+          expandedNodeSet.add(node.id);
+        }
+      });
+    }
+  }
+
+  private forgetMissingExpandedNodes(
+    treeControl: FlatTreeControl<TreeFlatNode>,
+    expandedNodeSet: Set<string>
+  ) {
+    if (treeControl.dataNodes) {
+      expandedNodeSet.forEach((nodeId) => {
+        // maintain expanded node state
+        if (!treeControl.dataNodes.find((n) => n.id === nodeId)) {
+          // if the tree doesn't have the previous node, remove it from the expanded list
+          expandedNodeSet.delete(nodeId);
+        }
+      });
+    }
+  }
+
+  private expandNodesById(flatNodes: TreeFlatNode[], ids: string[]) {
+    if (!flatNodes || flatNodes.length === 0) { return; }
+    const idSet = new Set(ids);
+    return flatNodes.forEach((node) => {
+      if (idSet.has(node.id)) {
+        this.treeControl.expand(node);
+        let parent = this.getParentNode(node);
+        while (parent) {
+          this.treeControl.expand(parent);
+          parent = this.getParentNode(parent);
+        }
+      }
+    });
+  }
+
+  private getParentNode(node: TreeFlatNode): TreeFlatNode | null {
+    const currentLevel = node.level;
+    if (currentLevel < 1) {
+      return null;
+    }
+    const startIndex = this.treeControl.dataNodes.indexOf(node) - 1;
+    for (let i = startIndex; i >= 0; i--) {
+      const currentNode = this.treeControl.dataNodes[i];
+      if (currentNode.level < currentLevel) {
+        return currentNode;
+      }
+    }
+    return null;
+  }
+
+  /**
+   * When user click on the tree node checkbox
+   */
+  public toggleTreeNodeSelection(node: TbTag): void {
+    console.log(node);
+  }
+
+  /**
+   * Experimental - opening tree nodes as you drag over them
+   */
+  dragStart() {
+    this.dragging = true;
+  }
+  dragEnd() {
+    this.dragging = false;
+  }
+  dragHover(node: TreeFlatNode) {
+    if (this.dragging) {
+      clearTimeout(this.expandTimeout);
+      this.expandTimeout = setTimeout(() => {
+        this.treeControl.expand(node);
+      }, this.expandDelay);
+    }
+  }
+  dragHoverEnd() {
+    if (this.dragging) {
+      clearTimeout(this.expandTimeout);
+    }
+  }
+
+}
+
+
+
+export interface TreeNode {
+  id: number;
+  userId: number;
+  name: string;
+  path: string;
+  type: any;
+  children: TreeNode[];
+  selected: boolean;
+}
+
+export class TreeFlatNode {
+  constructor(
+    public id: string,
+    public expandable: boolean,
+    public name: string,
+    public path: string,
+    public level: number,
+    public type: any,
+    public selected: boolean,
+  ) {}
 }

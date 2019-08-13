@@ -1,6 +1,6 @@
 export interface TreeItem {
   id: number;
-  userId: number;
+  /*userId: number;
   path: string;
   isFolder: boolean;
   isLeaf: boolean;
@@ -8,5 +8,5 @@ export interface TreeItem {
   isEditable: boolean;
   name: string;
   level: number;
-  children: Array<TreeItem>;
+  children: Array<TreeItem>;*/
 }

@@ -1,50 +1,60 @@
-<div class="tag-container">
-  <p *ngIf="basicTagsByCategory.length > 0"><b>Tags suggérés</b></p>
-  <div *ngFor="let cat of basicTagsByCategory" class="basicTagsByCategories">
-    <div class="category">{{ cat[0].path }}</div>
-    <mat-chip-list>
-      <mat-chip
-        *ngFor= "let tag of cat"
-        color="none"
-        selected="true"
-        disabled="false"
-        (click)="addBasicTag(tag)">
-        {{ tag.name }}
-        <mat-spinner class="tagSpinner" diameter="16" *ngIf="tag.pending"></mat-spinner>
-      </mat-chip>
-    </mat-chip-list>
-  </div>
+<!-- basic tags chips -->
+<mat-chip-list>
+  <mat-chip *ngFor="let bTag of basicTags" (click)="basicTagClicked(bTag)">{{ bTag.namae }}</mat-chip>
+</mat-chip-list>
 
-  <p><b>Mes tags</b></p>
-  <mat-chip-list>
-    <mat-chip
-      *ngFor= "let tag of userTags"
-      [color]="getColor(tag)"
-      selected="true"
-      disabled="false"
-      (click)="linkTag(tag)">
-      {{ getTagName(tag) }}
-      <mat-spinner class="tagSpinner" diameter="16" *ngIf="tag.pending"></mat-spinner>
-      <mat-spinner class="tagSpinner" color="accent" diameter="16" *ngIf="tag.unlinking"></mat-spinner>
-      <mat-icon matChipRemove *ngIf="userTagAlreadyUsed(tag) && !tag.unlinking" (click)="unlinkTag(tag)">cancel</mat-icon>
-    </mat-chip>
-  </mat-chip-list>
-  <p *ngIf="isLoadingUsersTags" class="loadingTags"><mat-spinner diameter="16"></mat-spinner>Chargement de vos tags personnalisés...</p>
-  <p *ngIf="userTags.length == 0 && !isLoadingUsersTags && !cantLoadUsersTags">Vous n'avez aucun tag personnalisé pour l'instant</p>
-  <p *ngIf="!isLoadingUsersTags && cantLoadUsersTags">Nous n'arrivons pas à récupérer vos tags personnalisés...</p>
+<!-- user's tags chips -->
+<mat-chip-list>
+  <mat-chip *ngFor="let uTag of userTagsObservable | async"
+            [color]="getTagColor(uTag)"
+            selected="true"
+            (click)="userTagSelectionChange(uTag)">
+            {{ uTag.name }}
+            <mat-spinner class="tagSpinner" diameter="16" *ngIf="uTag.linking"></mat-spinner>
+            <mat-spinner class="tagSpinner" diameter="16" color="accent" *ngIf="uTag.unlinking"></mat-spinner>
+  </mat-chip>
+</mat-chip-list>
 
-  <br />
-  <button type="button" color="primary" mat-raised-button (click)="$event.preventDefault(); toggleTree()">Gérer mes tags</button>
+<!-- tree -->
+<mat-tree [dataSource]="treeDataSource" [treeControl]="treeControl" cdkDropList (cdkDropListDropped)="drop($event)">
+  <!-- This is the tree node template for leaf nodes -->
+  <mat-tree-node *matTreeNodeDef="let node" matTreeNodeToggle matTreeNodePadding cdkDrag [cdkDragData]="node" cdkDropList (cdkDropListDropped)="drop($event)" [disabled]="treeDisabled"
+                 (mouseenter)="dragHover(node)" (mouseleave)="dragHoverEnd()" (cdkDragStarted)="dragStart()" (cdkDragReleased)="dragEnd()">
+    <!-- use a disabled button to provide padding for tree leaf -->
+    <button mat-icon-button disabled></button>
 
-  <div class="tagsTree" *ngIf="showTree">
-    <tb-tag-tree
-      [objectId]="_objectId"
-      [noApiCall]="noApiCall"
-      (httpError)="treeComponentHttpError($event)"
-      (_newTag)="newTagFromTree($event)"
-      (_removedTag)="removedTagFromTree()"
-      (_redrawTags)="getTags(userId)"
-      (tagsHasChanged)="getTags(userId)"
-      (log)="_log($event)"></tb-tag-tree>
-  </div>
-</div>
+    <mat-checkbox class="checklist-leaf-node"
+                  color="primary"
+                  *ngIf="!node.linking && !node.unlinking"
+                  [checked]="node.selected"
+                  (change)="userTagSelectionChange(node)">{{node.name}}</mat-checkbox>
+    <mat-spinner class="tagSpinner" diameter="16" *ngIf="node.linking || node.unlinking"></mat-spinner>
+
+    <div class="drag-placeholder" *cdkDragPlaceholder>
+      <mat-list role="list"><mat-list-item role="listitem">{{node.name}}</mat-list-item></mat-list>
+    </div>
+  </mat-tree-node>
+    
+  <!-- This is the tree node template for expandable nodes -->
+  <mat-tree-node *matTreeNodeDef="let node;when: hasChild" matTreeNodeToggle matTreeNodePadding cdkDrag [cdkDragData]="node" cdkDropList (cdkDropListDropped)="drop($event)" [disabled]="treeDisabled"
+                 (mouseenter)="dragHover(node)" (mouseleave)="dragHoverEnd()" (cdkDragStarted)="dragStart()" (cdkDragReleased)="dragEnd()">
+    <button mat-icon-button matTreeNodeToggle
+            [attr.aria-label]="'toggle ' + node.name">
+      <mat-icon class="mat-icon-rtl-mirror">
+        {{treeControl.isExpanded(node) ? 'expand_more' : 'chevron_right'}}
+      </mat-icon>
+    </button>
+
+    <mat-checkbox class="checklist-leaf-node"
+                  color="primary"
+                  *ngIf="!node.linking && !node.unlinking"
+                  [checked]="node.selected"
+                  (change)="userTagSelectionChange(node)">{{node.name}}</mat-checkbox>
+    <mat-spinner class="tagSpinner" diameter="16" *ngIf="node.linking || node.unlinking"></mat-spinner>
+
+    <div class="drag-placeholder" *cdkDragPlaceholder>
+      <mat-list role="list"><mat-list-item role="listitem">{{node.name}}</mat-list-item></mat-list>
+    </div>
+  </mat-tree-node>
+
+</mat-tree>
