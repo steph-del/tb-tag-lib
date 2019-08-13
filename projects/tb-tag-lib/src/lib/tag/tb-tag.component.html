@@ -18,7 +18,7 @@
 <!-- tree -->
 <mat-tree [dataSource]="treeDataSource" [treeControl]="treeControl" cdkDropList (cdkDropListDropped)="drop($event)">
   <!-- This is the tree node template for leaf nodes -->
-  <mat-tree-node *matTreeNodeDef="let node" matTreeNodeToggle matTreeNodePadding cdkDrag [cdkDragData]="node" cdkDropList (cdkDropListDropped)="drop($event)" [disabled]="treeDisabled"
+  <mat-tree-node *matTreeNodeDef="let node" matTreeNodeToggle matTreeNodePadding cdkDrag [cdkDragData]="node" [disabled]="treeDisabled"
                  (mouseenter)="dragHover(node)" (mouseleave)="dragHoverEnd()" (cdkDragStarted)="dragStart()" (cdkDragReleased)="dragEnd()">
     <!-- use a disabled button to provide padding for tree leaf -->
     <button mat-icon-button disabled></button>
@@ -36,7 +36,7 @@
   </mat-tree-node>
     
   <!-- This is the tree node template for expandable nodes -->
-  <mat-tree-node *matTreeNodeDef="let node;when: hasChild" matTreeNodeToggle matTreeNodePadding cdkDrag [cdkDragData]="node" cdkDropList (cdkDropListDropped)="drop($event)" [disabled]="treeDisabled"
+  <mat-tree-node *matTreeNodeDef="let node;when: hasChild" matTreeNodeToggle matTreeNodePadding cdkDrag [cdkDragData]="node" [disabled]="treeDisabled"
                  (mouseenter)="dragHover(node)" (mouseleave)="dragHoverEnd()" (cdkDragStarted)="dragStart()" (cdkDragReleased)="dragEnd()">
     <button mat-icon-button matTreeNodeToggle
             [attr.aria-label]="'toggle ' + node.name">
