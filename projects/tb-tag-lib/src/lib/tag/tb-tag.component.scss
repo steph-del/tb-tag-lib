@@ -1,3 +1,11 @@
+@mixin spinner-div() {
+  display: flex;
+  flex-direction: row;
+  mat-spinner {
+    margin-right: 10px;
+  }
+}
+
 /* 
   ::ng-deep will be deprecated but no better solution for now
 */
@@ -9,6 +17,32 @@
   }
   .tree-wrapper tree-root tree-viewport {
     overflow: unset;
+  }
+}
+
+.delete-tag-wrapper {
+  margin: 20px;
+  display: flex;
+  justify-content: center;
+  .delete-card {
+    max-width: 400px;
+    .mat-card-header {
+      justify-content: center;
+      .mat-card-title {
+        font-variant: small-caps;
+        font-weight: bold;
+        text-align: center;
+      }
+    }
+    .mat-card-content {
+      .tag-deletion-loading-operation {
+        @include spinner-div();
+      }
+    }
+    .mat-card-actions {
+      display: flex;
+      justify-content: space-between;
+    }
   }
 }
 
@@ -45,29 +79,18 @@
   }
   
   .tree-node-crud-operation {
-    display: flex;
-    flex-direction: row;
-    mat-spinner {
-      margin-right: 10px;
-    }
+    @include spinner-div();
   }
   
   .tree-node-editing-name {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
+    @include spinner-div();
     button {
       max-height: 35px;
     }
   }
   
   .api-crud-operation {
-    display: flex;
-    flex-direction: row;
-    justify-content: center;
-    matmat-spinner {
-      margin-right: 10px;
-    }
+    @include spinner-div();
   }
 
   .tag-creation {

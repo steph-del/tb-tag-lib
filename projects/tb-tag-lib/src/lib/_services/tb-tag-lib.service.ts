@@ -168,8 +168,8 @@ export class TbTagService {
     return this.http.post<TbTag>(`${this.baseApiUrl}${this.tagEndpoint}`, {name: name, path: path, userId: this.userId});
   }
 
-  removeTag(tag: TbTag): Observable<any> {
-    return of(null);
+  deleteTag(tag: TbTag): Observable<any> {
+    return this.http.delete<any>(`${this.baseApiUrl}${this.tagEndpoint}/${tag.id}`);
   }
 
   updateTag(tag: TbTag): Observable<TbTag> {
@@ -203,6 +203,11 @@ export class TbTagService {
 
   getTagsRelationsToObjects(objectId: number): Observable<Array<any>> {
     return of(null);
+  }
+
+  getTagsRelations(tag: TbTag): Observable<Array<any>> {
+    const headers = {};
+    return this.http.get<Array<any>>(`${this.baseApiUrl}${this.apiTagsRelationsPath.replace('{id}', tag.id.toString())}.json`, {headers});
   }
 
   linkTagToObject(tagId: number, objectId: number): Observable<any> {

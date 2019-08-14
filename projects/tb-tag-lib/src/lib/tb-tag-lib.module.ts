@@ -4,9 +4,8 @@ import { HttpClientModule } from '@angular/common/http';
 import { ReactiveFormsModule } from '@angular/forms';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { MatInputModule, MatAutocompleteModule, MatProgressSpinnerModule, MatChipsModule, MatIconModule,
-         MatDialogModule, MatButtonModule, MatMenuModule, MatSnackBarModule,
-        MatCheckboxModule, MatFormFieldModule, MatTreeModule, MatListModule } from '@angular/material';
-import { DragDropModule } from '@angular/cdk/drag-drop';
+         MatDialogModule, MatButtonModule, MatMenuModule, MatSnackBarModule, MatTooltipModule,
+         MatCheckboxModule, MatFormFieldModule, MatTreeModule, MatListModule, MatCardModule } from '@angular/material';
 
 import { TbTagTreeComponent } from './tree/tb-tag-tree.component';
 import { TbTagComponent } from './tag/tb-tag.component';
@@ -23,7 +22,7 @@ import { TreeService } from './_services/tb-tree.service';
     TreeModule.forRoot(),
     MatInputModule, MatAutocompleteModule, MatProgressSpinnerModule, MatChipsModule, MatIconModule, MatDialogModule,
     MatButtonModule, MatMenuModule, MatSnackBarModule, MatCheckboxModule, MatFormFieldModule, MatTreeModule, MatListModule,
-    DragDropModule
+    MatCardModule, MatTooltipModule
   ],
   entryComponents: [],
   declarations: [TbTagTreeComponent, TbTagComponent],

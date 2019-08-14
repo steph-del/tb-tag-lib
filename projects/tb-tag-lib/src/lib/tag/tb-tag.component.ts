@@ -1,3 +1,5 @@
+// TODO PREVENT SENDING FORM FOR ALL BUTTONS
+
 import { Component, OnInit, Input, Output, EventEmitter, OnChanges, SimpleChanges, ViewChild } from '@angular/core';
 import { FormBuilder } from '@angular/forms';
 
@@ -10,7 +12,6 @@ import { TbTagService } from '../_services/tb-tag-lib.service';
 import * as _ from 'lodash';
 import { FlatTreeControl } from '@angular/cdk/tree';
 import { MatTreeFlattener, MatTreeFlatDataSource } from '@angular/material/tree';
-import { CdkDragDrop } from '@angular/cdk/drag-drop';
 import { flatMap, map } from 'rxjs/operators';
 
 import { ITreeState, ITreeOptions, TreeComponent, TreeNode, TreeModel, TREE_ACTIONS } from 'angular-tree-component';
@@ -60,8 +61,13 @@ export class TbTagComponent implements OnInit {
   isLoadingBasicTags = false;
   isLoadingUsersTags = false;
   isCreatingNewTag = false;
+  isDeletingTag = false;
+  tagToBeDeleted: TbTag;
+  tagToBeDeletedRelatedObjects: Array<any> = [];
   apiRenamingTagPath = false;
   apiCreatingNewTag = false;
+  apiLoadingRelatedObects = false;
+  apiDeletingTag = false;
 
   // tree
   zipTagPathRename: Array<Observable<any>> = [];
@@ -330,6 +336,9 @@ export class TbTagComponent implements OnInit {
     return _.cloneDeep(tags);
   }
 
+  /**
+   * Recursively parse an array of tags and get the tag with the given id
+   */
   public findTagById(tags: Array<TbTag>, id: number): TbTag {
     let result, subResult;
     tags.forEach(tag => {
@@ -341,6 +350,19 @@ export class TbTagComponent implements OnInit {
       }
     });
     return result;
+  }
+
+  /**
+   * Recursively parse an array of tags and remove the tag with the given id
+   */
+  public removeTagById(tags: Array<TbTag>, id: number): void {
+    tags.forEach(tag => {
+      if (Number(tag.id) === Number(id)) {
+        _.remove(tags, t => t === tag);
+      } else if (tag.children) {
+        this.removeTagById(tag.children, id);
+      }
+    });
   }
 
   /**
@@ -698,6 +720,54 @@ export class TbTagComponent implements OnInit {
         }
       }
     }
+  }
+
+  startDeletingTag(node: TbTag) {
+    this.isDeletingTag = true;
+    this.tagToBeDeleted = node;
+    this.apiLoadingRelatedObects = true;
+    this.tagService.getTagsRelations(node).subscribe(
+      results => {
+        // related objects to the provided tag (node)
+        this.tagToBeDeletedRelatedObjects = results;
+        this.apiLoadingRelatedObects = false;
+      }, error => {
+        // @Todo manage error
+        this.apiLoadingRelatedObects = false;
+        console.log(error);
+      }
+    );
+  }
+
+  stopDeletingTag() {
+    this.isDeletingTag = false;
+    this.tagToBeDeleted = null;
+    this.tagToBeDeletedRelatedObjects = [];
+  }
+
+  deleteTag(tag: TbTag): void {
+    if (tag.children && tag.children.length > 0) {
+      // @Todo notify user
+      return;
+    }
+    const clonedUserTags = this.cloneTags(this.userTagsObservable.getValue());
+    const clonedTagToDelete = this.findTagById(clonedUserTags, tag.id);
+
+    this.apiDeletingTag = true;
+    this.tagService.deleteTag(tag).subscribe(
+      result => {
+        console.log(result);
+        this.removeTagById(clonedUserTags, clonedTagToDelete.id);
+        this.userTagsObservable.next(clonedUserTags);
+        this.apiDeletingTag = false;
+        this.stopDeletingTag();
+        // @Todo notify user
+      }, error => {
+        // @Todo manage error
+        console.log(error);
+        this.apiDeletingTag = false;
+      }
+    );
   }
 
 }
