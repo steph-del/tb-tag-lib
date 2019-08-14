@@ -11,4 +11,6 @@ export interface TbTag {
   loading?: boolean;
   linking?: boolean;
   unlinking?: boolean;
+  isEditingName?: boolean;
+  isSavingName?: boolean;
 }

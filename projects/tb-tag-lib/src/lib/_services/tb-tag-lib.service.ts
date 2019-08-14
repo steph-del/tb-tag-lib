@@ -120,7 +120,7 @@ export class TbTagService {
     return responseArray;
   }
 
-  private removeAccentAndUpperCase(str: string): string {
+  public removeAccentAndUpperCase(str: string): string {
     return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
   }
 
@@ -165,7 +165,7 @@ export class TbTagService {
   // TAG CRUD
   // ********
   createTag(name: string, path: string): Observable<TbTag> {
-    return of(null);
+    return this.http.post<TbTag>(`${this.baseApiUrl}${this.tagEndpoint}`, {name: name, path: path, userId: this.userId});
   }
 
   removeTag(tag: TbTag): Observable<any> {
@@ -174,6 +174,14 @@ export class TbTagService {
 
   updateTag(tag: TbTag): Observable<TbTag> {
     return of(null);
+  }
+
+  updateTagPath(tag: TbTag): Observable<TbTag> {
+    return this.http.patch<TbTag>(`${this.baseApiUrl}${this.tagEndpoint}/${tag.id}`, {path: tag.path});
+  }
+
+  updateTagName(tag: TbTag): Observable<TbTag> {
+    return this.http.patch<TbTag>(`${this.baseApiUrl}${this.tagEndpoint}/${tag.id}`, {name: tag.name});
   }
 
   // ************************

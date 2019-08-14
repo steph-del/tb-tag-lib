@@ -1,7 +1,7 @@
-import { Component, OnInit, Input, Output, EventEmitter, OnChanges, SimpleChanges } from '@angular/core';
+import { Component, OnInit, Input, Output, EventEmitter, OnChanges, SimpleChanges, ViewChild } from '@angular/core';
 import { FormBuilder } from '@angular/forms';
 
-import { Observable, BehaviorSubject } from 'rxjs';
+import { Observable, BehaviorSubject, VirtualAction, zip } from 'rxjs';
 
 import { TbLog } from '../_models/tb-log.model';
 import { TbTag } from '../_models/tbtag.model';
@@ -13,12 +13,17 @@ import { MatTreeFlattener, MatTreeFlatDataSource } from '@angular/material/tree'
 import { CdkDragDrop } from '@angular/cdk/drag-drop';
 import { flatMap, map } from 'rxjs/operators';
 
+import { ITreeState, ITreeOptions, TreeComponent, TreeNode, TreeModel, TREE_ACTIONS } from 'angular-tree-component';
+
+
 @Component({
   selector: 'tb-tag',
   templateUrl: './tb-tag.component.html',
   styleUrls: ['./tb-tag.component.scss']
 })
 export class TbTagComponent implements OnInit {
+  @ViewChild('treeComponent') private treeComponent: TreeComponent;
+
   //
   // INPUT / OUTPUT
   //
@@ -54,16 +59,45 @@ export class TbTagComponent implements OnInit {
   objectsTags: Array<TbTag> = [];
   isLoadingBasicTags = false;
   isLoadingUsersTags = false;
+  isCreatingNewTag = false;
+  apiRenamingTagPath = false;
+  apiCreatingNewTag = false;
+
+  // tree
+  zipTagPathRename: Array<Observable<any>> = [];
+  state: ITreeState = {
+    expandedNodeIds: {},
+    hiddenNodeIds: {},
+    activeNodeIds: {}
+  };
+
+  options: ITreeOptions = {
+    allowDrag: (node) => true,
+    getNodeClone: (node) => ({
+      ...node.data,
+      id: node.id,
+      name: `copy of ${node.data.name}`
+    }),
+    nodeHeight: 40,
+    /*actionMapping: {
+      mouse: {
+        click: (tree, node, $event) => {
+          if (node.hasChildren) { TREE_ACTIONS.TOGGLE_EXPANDED(tree, node, $event); }
+        }
+      }
+    }*/
+  };
+
 
   tree: Array<TbTag> = [];
-  treeDataSource: MatTreeFlatDataSource<any, any>;
-  expandedNodeSet = new Set<string>();
-  dragging = false;
-  expandTimeout: any;
-  expandDelay = 1000;
-  treeDisabled = false;
+  // treeDataSource: MatTreeFlatDataSource<NgTreeNode, any>;
+  // expandedNodeSet = new Set<string>();
+  // dragging = false;
+  // expandTimeout: any;
+  // expandDelay = 1000;
+  // treeDisabled = false;
 
-  _transformer = (node: TreeNode, level: number) => {
+  /*_transformer = (node: NgTreeNode, level: number) => {
     return new TreeFlatNode(
       node.id.toString(),
       !!node.children && node.children.length > 0,
@@ -73,12 +107,12 @@ export class TbTagComponent implements OnInit {
       node.type,
       node.selected
     );
-  }
+  }*/
 
   // tslint:disable-next-line:member-ordering
-  treeFlattener = new MatTreeFlattener(this._transformer, node => node.level, node => node.expandable, node => node.children);
+  // treeFlattener = new MatTreeFlattener(this._transformer, node => node.level, node => node.expandable, node => node.children);
   // tslint:disable-next-line:member-ordering
-  treeControl = new FlatTreeControl<TreeFlatNode>(node => node.level, node => node.expandable);
+  // treeControl = new FlatTreeControl<TreeFlatNode>(node => node.level, node => node.expandable);
 
   constructor(
     private tagService: TbTagService,
@@ -102,14 +136,15 @@ export class TbTagComponent implements OnInit {
     this.tagService.setTagEndpoint(this.tagEndpoint);
     this.tagService.setUserId(Number(this.userId));
 
-    this.treeDataSource = new MatTreeFlatDataSource(this.treeControl, this.treeFlattener);
+    // this.treeDataSource = new MatTreeFlatDataSource(this.treeControl, this.treeFlattener);
 
     // User tags subscriber
     this.userTagsObservable.subscribe(
       newUserTags => {
         // update tree
         if (newUserTags.length > 0) {
-          this.rebuildTreeForData(this.tagService.buildTree(newUserTags));
+          // this.rebuildTreeForData(this.tagService.buildTree(newUserTags));
+          this.tree = this.tagService.buildTree(newUserTags);
         }
       }, error => {
         //
@@ -160,9 +195,98 @@ export class TbTagComponent implements OnInit {
   }
 
   /**
-   * When user click on an user's tag
+   * When user click on an user's tag or toggle a checkbox in the tree
+   * @param node from the tree
    */
-  userTagSelectionChange(uTag: TbTag): void {
+  uTagSelectionChange(node: TbTag): void {
+    const clonedUserTags = this.cloneTags(this.userTagsObservable.getValue());
+    const clonedUTag = this.findTagById(clonedUserTags, node.id);
+
+    if (clonedUTag.selected) {
+      // unlink object
+      node.unlinking = true;
+      clonedUTag.unlinking = true;
+      this.tagService.unlinkTagToObject(clonedUTag.id, this._objectId).subscribe(
+        result => {
+          clonedUTag.selected = false;
+          node.unlinking = false;
+          clonedUTag.unlinking = false;
+          this.userTagsObservable.next(clonedUserTags);
+        }, error => {
+          node.unlinking = false;
+          clonedUTag.unlinking = false;
+        }
+      );
+    } else {
+      // link object
+      node.linking = true;
+      clonedUTag.linking = true;
+      this.tagService.linkTagToObject(clonedUTag.id, this._objectId).subscribe(
+        result => {
+          // reload tree
+          clonedUTag.selected = true;
+          node.linking = false;
+          clonedUTag.linking = false;
+          this.userTagsObservable.next(clonedUserTags);
+        }, error => {
+          console.log(error);
+          node.linking = false;
+          clonedUTag.linking = false;
+        }
+      );
+    }
+  }
+
+  /**
+   * When user click on the edit button inside the tree
+   * @param node from the tree
+   */
+  editTagName(node: TbTag): void {
+    node.isEditingName = true;
+  }
+   /**
+   * When user click on the cancel edit button inside the tree
+   * @param node from the tree
+   */
+  stopEditingTagName(node: TbTag): void {
+    node.isEditingName = false;
+  }
+
+  /**
+   * When user validate a new name (click on the 'Validate' button)
+   * @param node from the tree
+   * @param newValue from the input
+   */
+  renameTag(node: TbTag, newValue: string): void {
+    this.stopEditingTagName(node);
+    // @Todo check name size (must not exceed 30 characters)
+    const oldValue = _.clone(node.name);
+
+    const clonedUserTags = this.cloneTags(this.userTagsObservable.getValue());
+    const clonedUTag = this.findTagById(clonedUserTags, node.id);
+
+    node.name = newValue;
+    node.isSavingName = true;
+    this.tagService.updateTagName(node).subscribe(
+      result => {
+        clonedUTag.name = newValue;
+        this.userTagsObservable.next(clonedUserTags);
+        node.isSavingName = false;
+      }, error => {
+        // @Todo manage error
+        console.log(error);
+        node.name = oldValue;
+        node.isSavingName = false;
+      }
+    );
+
+  }
+
+  /**
+   * When user click on an user's tag
+   * DELETE
+   */
+  /*userTagSelectionChange(uTag: TbTag): void {
     const clonedUserTags = this.cloneTags(this.userTagsObservable.getValue());
     const clonedUTag = this.findTagById(clonedUserTags, uTag.id);
     const nodeTagInArray = this.findTagById(this.treeDataSource.data, uTag.id);
@@ -200,7 +324,7 @@ export class TbTagComponent implements OnInit {
         }
       );
     }
-  }
+  }*/
 
   public cloneTags(tags: Array<TbTag>): Array<TbTag> {
     return _.cloneDeep(tags);
@@ -221,11 +345,26 @@ export class TbTagComponent implements OnInit {
 
   /**
    * When user create a new tag
-   * @param node ?
    * @param value entered by the user
    */
-  createTag(node: TbTag, value: string) {
-    console.log(node, value);
+  createNewTag(value: string) {
+    console.log(value);
+    this.isCreatingNewTag = false;
+
+    const clonedUserTags = this.cloneTags(this.userTagsObservable.getValue());
+
+    this.apiCreatingNewTag = true;
+    this.tagService.createTag(value, '/').subscribe(
+      result => {
+        clonedUserTags.push(result);
+        this.userTagsObservable.next(clonedUserTags);
+        // this.uTagSelectionChange(result); /* uncomment for the tag to be selected immediately after its creation */
+        this.apiCreatingNewTag = false;
+      }, error => {
+        // @Todo manage error
+        this.apiCreatingNewTag = false;
+      }
+    );
   }
 
   // ************************
@@ -260,7 +399,7 @@ export class TbTagComponent implements OnInit {
    * Handle the drop - here we rearrange the data based on the drop event,
    * then rebuild the tree.
    * */
-  drop(event: CdkDragDrop<string[]>) {
+  /*drop(event: CdkDragDrop<string[]>) {
     // construct a list of visible nodes, this will match the DOM.
     const visibleNodes = this.visibleNodes();
 
@@ -292,7 +431,7 @@ export class TbTagComponent implements OnInit {
 
     const siblings = findNodeSiblings(changedData, node.id);
     const siblingIndex = siblings.findIndex(n => n.id.toString() === node.id.toString());
-    const nodeToInsert: TreeNode = siblings.splice(siblingIndex, 1)[0];
+    const nodeToInsert: NgTreeNode = siblings.splice(siblingIndex, 1)[0];
 
     // determine where to insert the node
     const nodeAtDest = visibleNodes[event.currentIndex];
@@ -328,17 +467,17 @@ export class TbTagComponent implements OnInit {
       this.treeDisabled = false;
     }, 1000);
 
-  }
+  }*/
 
   /**
    * This constructs an array of nodes that matches the DOM,
    * and calls rememberExpandedTreeNodes to persist expand state
    */
-  visibleNodes(): TreeNode[] {
+  /*visibleNodes(): NgTreeNode[] {
     this.rememberExpandedTreeNodes(this.treeControl, this.expandedNodeSet);
     const result = [];
 
-    function addExpandedChildren(node: TreeNode, expanded: Set<string>) {
+    function addExpandedChildren(node: NgTreeNode, expanded: Set<string>) {
       result.push(node);
       if (node.children && expanded.has(node.id.toString())) {
         node.children.map(child => addExpandedChildren(child, expanded));
@@ -350,24 +489,24 @@ export class TbTagComponent implements OnInit {
     console.log('visible nodes :');
     console.log(result);
     return result;
-  }
+  }*/
 
   // tslint:disable-next-line:no-shadowed-variable
-  hasChild = (_: number, node: TreeFlatNode) => node.expandable;
+  // hasChild = (_: number, node: TreeFlatNode) => node.expandable;
 
   /**
    * The following methods are for persisting the tree expand state
    * after being rebuilt
    */
 
-  rebuildTreeForData(data: any) {
+  /*rebuildTreeForData(data: any) {
     this.rememberExpandedTreeNodes(this.treeControl, this.expandedNodeSet);
     this.treeDataSource.data = data;
     this.forgetMissingExpandedNodes(this.treeControl, this.expandedNodeSet);
     this.expandNodesById(this.treeControl.dataNodes, Array.from(this.expandedNodeSet));
-  }
+  }*/
 
-  private rememberExpandedTreeNodes(
+  /*private rememberExpandedTreeNodes(
     treeControl: FlatTreeControl<TreeFlatNode>,
     expandedNodeSet: Set<string>
   ) {
@@ -379,9 +518,9 @@ export class TbTagComponent implements OnInit {
         }
       });
     }
-  }
+  }*/
 
-  private forgetMissingExpandedNodes(
+  /*private forgetMissingExpandedNodes(
     treeControl: FlatTreeControl<TreeFlatNode>,
     expandedNodeSet: Set<string>
   ) {
@@ -394,9 +533,9 @@ export class TbTagComponent implements OnInit {
         }
       });
     }
-  }
+  }*/
 
-  private expandNodesById(flatNodes: TreeFlatNode[], ids: string[]) {
+  /*private expandNodesById(flatNodes: TreeFlatNode[], ids: string[]) {
     if (!flatNodes || flatNodes.length === 0) { return; }
     const idSet = new Set(ids);
     return flatNodes.forEach((node) => {
@@ -409,9 +548,9 @@ export class TbTagComponent implements OnInit {
         }
       }
     });
-  }
+  }*/
 
-  private getParentNode(node: TreeFlatNode): TreeFlatNode | null {
+  /*private getParentNode(node: TreeFlatNode): TreeFlatNode | null {
     const currentLevel = node.level;
     if (currentLevel < 1) {
       return null;
@@ -424,49 +563,147 @@ export class TbTagComponent implements OnInit {
       }
     }
     return null;
-  }
+  }*/
 
   /**
    * When user click on the tree node checkbox
    */
-  public toggleTreeNodeSelection(node: TbTag): void {
+  /*public toggleTreeNodeSelection(node: TbTag): void {
     console.log(node);
-  }
+  }*/
 
   /**
    * Experimental - opening tree nodes as you drag over them
    */
-  dragStart() {
+  /*dragStart() {
     this.dragging = true;
-  }
-  dragEnd() {
+    for (const node of this.treeDataSource.data) {
+      const emptyChildTreeNode: NgTreeNode = {
+        id: -1,
+        userId: this.userId,
+        name: 'empty child',
+        path: '/',
+        type: '',
+        children: [],
+        selected: false
+      };
+      const emptyTreeNode: NgTreeNode = {
+        id: -1,
+        userId: this.userId,
+        name: 'empty',
+        path: '/',
+        type: '',
+        children: [emptyChildTreeNode],
+        selected: false
+      };
+      if (node.children.length === 0) {
+        node.children.push(emptyTreeNode);
+      }
+    }
+  }*/
+
+  /*dragEnd() {
     this.dragging = false;
-  }
-  dragHover(node: TreeFlatNode) {
+  }*/
+
+  /*dragHover(node: TreeFlatNode) {
+    console.log('DRAG HOVER');
+    console.log(node);
     if (this.dragging) {
       clearTimeout(this.expandTimeout);
       this.expandTimeout = setTimeout(() => {
         this.treeControl.expand(node);
       }, this.expandDelay);
     }
-  }
-  dragHoverEnd() {
+  }*/
+
+  /*dragHoverEnd() {
     if (this.dragging) {
       clearTimeout(this.expandTimeout);
+    }
+  }*/
+
+  /**
+   * When user moves a node inside the tree
+   * @param event provided by angular-tree
+   */
+  moveNode(event: {eventName: string, node: TbTag, to: {index: number, parent: any}, treeModel: TreeModel}) {
+    console.log('MOVE NODE : ');
+    console.log(event);
+    console.log('GET NODE BY INDEX', event.to.index);
+    console.log(event.treeModel.getNodeById(event.to.index));
+
+    this.renameNodePaths(event.node, event.to.parent);
+    console.log(this.zipTagPathRename);
+    if (this.zipTagPathRename.length > 0) {
+      this.apiRenamingTagPath = true;
+      const zipCall = zip(...this.zipTagPathRename).subscribe(
+        results => {
+          this.zipTagPathRename = [];
+          console.log(results);
+          this.apiRenamingTagPath = false;
+        }, error => {
+          // @Todo notify user & reload entire tree
+          this.zipTagPathRename = [];
+          console.log(error);
+          this.apiRenamingTagPath = false;
+        }
+      );
+    }
+
+  }
+
+  /**
+   * Recursively rename tag path
+   * and push API calls to `this.zipTagPathRename` stack
+   * Be carefull, you have to manually subscribe to `this.zipTagPathRename` observables and also clean up the array we finished
+   * @param node is a TbTag
+   * @param parent is an object provided by angular-tree module
+   */
+  renameNodePaths(node: TbTag, parent: any): void {
+    console.log(`RENAME PATH FOR : ${node.name} (${node.path})`);
+    console.log(parent);
+    // parent can be a virtual node when moving a node at root
+    if (parent.virtual) {
+      if (node.path !== '/') {
+        node.path = '/';
+        // push observable on the stack
+        this.zipTagPathRename.push(this.tagService.updateTagPath(node));
+      }
+
+      if (node.children && node.children.length > 0) {
+        for (const childNode of node.children) {
+          this.renameNodePaths(childNode, node);
+        }
+      }
+    } else {
+      const newPath = parent.path + this.tagService.removeAccentAndUpperCase(parent.name) + '/';
+      // @Todo check path size : must not exceed 255 characters
+      if (newPath !== node.path) {
+        node.path = newPath;
+        // push observable on the stack
+        this.zipTagPathRename.push(this.tagService.updateTagPath(node));
+      }
+
+      if (node.children && node.children.length > 0) {
+        for (const childNode of node.children) {
+          this.renameNodePaths(childNode, node);
+        }
+      }
     }
   }
 
 }
 
 
-
-export interface TreeNode {
+/*
+export interface NgTreeNode {
   id: number;
   userId: number;
   name: string;
   path: string;
   type: any;
-  children: TreeNode[];
+  children: NgTreeNode[];
   selected: boolean;
 }
 
@@ -481,3 +718,4 @@ export class TreeFlatNode {
     public selected: boolean,
   ) {}
 }
+*/

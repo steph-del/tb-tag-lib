@@ -8,7 +8,7 @@
   <mat-chip *ngFor="let uTag of userTagsObservable | async"
             [color]="getTagColor(uTag)"
             selected="true"
-            (click)="userTagSelectionChange(uTag)">
+            (click)="uTagSelectionChange(uTag)">
             {{ uTag.name }}
             <mat-spinner class="tagSpinner" diameter="16" *ngIf="uTag.linking"></mat-spinner>
             <mat-spinner class="tagSpinner" diameter="16" color="accent" *ngIf="uTag.unlinking"></mat-spinner>
@@ -16,45 +16,62 @@
 </mat-chip-list>
 
 <!-- tree -->
-<mat-tree [dataSource]="treeDataSource" [treeControl]="treeControl" cdkDropList (cdkDropListDropped)="drop($event)">
-  <!-- This is the tree node template for leaf nodes -->
-  <mat-tree-node *matTreeNodeDef="let node" matTreeNodeToggle matTreeNodePadding cdkDrag [cdkDragData]="node" [disabled]="treeDisabled"
-                 (mouseenter)="dragHover(node)" (mouseleave)="dragHoverEnd()" (cdkDragStarted)="dragStart()" (cdkDragReleased)="dragEnd()">
-    <!-- use a disabled button to provide padding for tree leaf -->
-    <button mat-icon-button disabled></button>
+<div class="tree-wrapper">
+  <tree-root
+    #treeComponent
+    [state]="state"
+    [options]="options"
+    [focused]="true"
+    [nodes]="tree"
+    (moveNode)="moveNode($event)">
 
-    <mat-checkbox class="checklist-leaf-node"
-                  color="primary"
-                  *ngIf="!node.linking && !node.unlinking"
-                  [checked]="node.selected"
-                  (change)="userTagSelectionChange(node)">{{node.name}}</mat-checkbox>
-    <mat-spinner class="tagSpinner" diameter="16" *ngIf="node.linking || node.unlinking"></mat-spinner>
+    <ng-template #treeNodeTemplate let-node let-index="index">
+      <div class="tree-row">
+          <mat-checkbox
+            *ngIf="!node.data.linking && !node.data.unlinking && !node.data.isEditingName && !node.data.isSavingName"
+            color="primary"
+            [checked]="node.data.selected"
+            (change)="uTagSelectionChange(node.data)">
+            {{ node.data.name }}
+          </mat-checkbox>
+          <div *ngIf="node.data.linking || node.data.unlinking || node.data.isSavingName" class="tree-node-crud-operation">
+              <mat-spinner diameter="16"></mat-spinner>
+              <span>Enregistrement en cours...</span>
+          </div>
+          <div *ngIf="node.data.isEditingName" class="tree-node-editing-name">
+            <mat-form-field>
+              <input matInput #newTagName value="{{node.data.name}}" placeholder="Renommer le tag" maxlength="30">
+            </mat-form-field>
+            <button mat-button (click)="renameTag(node.data, newTagName.value)">Valider</button>
+            <button mat-button (click)="stopEditingTagName(node.data)">Annuler</button>
+          </div>
+          <div class="actions">
+            <div class="vertical-separator"></div>
+            <div><button mat-icon-button (click)="editTagName(node.data)"><mat-icon>edit</mat-icon></button></div>
+            <div><button mat-icon-button><mat-icon>delete</mat-icon></button></div>
+          </div>
+      </div>
+      
+    </ng-template>
 
-    <div class="drag-placeholder" *cdkDragPlaceholder>
-      <mat-list role="list"><mat-list-item role="listitem">{{node.name}}</mat-list-item></mat-list>
-    </div>
-  </mat-tree-node>
-    
-  <!-- This is the tree node template for expandable nodes -->
-  <mat-tree-node *matTreeNodeDef="let node;when: hasChild" matTreeNodeToggle matTreeNodePadding cdkDrag [cdkDragData]="node" [disabled]="treeDisabled"
-                 (mouseenter)="dragHover(node)" (mouseleave)="dragHoverEnd()" (cdkDragStarted)="dragStart()" (cdkDragReleased)="dragEnd()">
-    <button mat-icon-button matTreeNodeToggle
-            [attr.aria-label]="'toggle ' + node.name">
-      <mat-icon class="mat-icon-rtl-mirror">
-        {{treeControl.isExpanded(node) ? 'expand_more' : 'chevron_right'}}
-      </mat-icon>
-    </button>
+  </tree-root>
 
-    <mat-checkbox class="checklist-leaf-node"
-                  color="primary"
-                  *ngIf="!node.linking && !node.unlinking"
-                  [checked]="node.selected"
-                  (change)="userTagSelectionChange(node)">{{node.name}}</mat-checkbox>
-    <mat-spinner class="tagSpinner" diameter="16" *ngIf="node.linking || node.unlinking"></mat-spinner>
+  <div *ngIf="apiRenamingTagPath || apiCreatingNewTag" class="api-crud-operation">
+      <mat-spinner diameter="16"></mat-spinner>
+      <span>Enregistrement en cours...</span>
+  </div>
 
-    <div class="drag-placeholder" *cdkDragPlaceholder>
-      <mat-list role="list"><mat-list-item role="listitem">{{node.name}}</mat-list-item></mat-list>
-    </div>
-  </mat-tree-node>
+  <button mat-button *ngIf="!isCreatingNewTag && !apiCreatingNewTag" (click)="isCreatingNewTag = true">
+    <mat-icon style="margin-right: 10px;">add</mat-icon>Créer un nouveau tag
+  </button>
 
-</mat-tree>
+  <div *ngIf="isCreatingNewTag && !apiCreatingNewTag" class="tag-creation">
+    <mat-form-field>
+      <input matInput #createTagValue placeholder="Nom du nouveau tag">
+    </mat-form-field>
+    <button mat-button (click)="createNewTag(createTagValue.value)">Valider</button>
+    <button mat-button (click)="isCreatingNewTag = false">Annuler</button>
+  </div>
+
+</div>
+
