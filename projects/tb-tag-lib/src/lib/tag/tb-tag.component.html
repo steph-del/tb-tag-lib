@@ -4,7 +4,7 @@
 </mat-chip-list>
 
 <!-- user's tags chips -->
-<mat-chip-list>
+<mat-chip-list class="chip-list">
   <mat-chip *ngFor="let uTag of userTagsObservable | async"
             [color]="getTagColor(uTag)"
             selected="true"
@@ -25,7 +25,7 @@
     [nodes]="tree"
     (moveNode)="moveNode($event)">
 
-    <ng-template #treeNodeTemplate let-node let-index="index">
+    <!--<ng-template #treeNodeTemplate let-node let-index="index">
       <div class="tree-row">
           <mat-checkbox
             *ngIf="!node.data.linking && !node.data.unlinking && !node.data.isEditingName && !node.data.isSavingName"
@@ -52,6 +52,58 @@
           </div>
       </div>
       
+    </ng-template>-->
+
+    <ng-template #treeNodeWrapperTemplate let-node let-index="index">
+      <div class="node-wrapper" [style.padding-left]="node.getNodePadding()">
+        <!--<tree-node-expander [node]="node">-></tree-node-expander>-->
+        <div class="my-node-expander" (click)="expandNode(node)">
+          <!-- use a disabled button to provide padding for tree leaf -->
+          <button mat-icon-button disabled *ngIf="node.isLeaf"></button>
+          <button mat-icon-button *ngIf="!node.isLeaf && !node.isExpanded"><mat-icon>chevron_right</mat-icon></button>
+          <button mat-icon-button *ngIf="!node.isLeaf && node.isExpanded"><mat-icon>expand_more</mat-icon></button>
+        </div>
+        <div class="node-content-wrapper"
+          [class.node-content-wrapper-active]="node.isActive"
+          [class.node-content-wrapper-focused]="node.isFocused"
+          (click)="node.mouseAction('click', $event)"
+          (dblclick)="node.mouseAction('dblClick', $event)"
+          (contextmenu)="node.mouseAction('contextMenu', $event)"
+          (treeDrop)="node.onDrop($event)"
+          [treeAllowDrop]="node.allowDrop"
+          [treeDrag]="node"
+          [treeDragEnabled]="node.allowDrag()">
+  
+          <!--<tree-node-content [node]="node" [index]="index"></tree-node-content>-->
+          <div class="tree-row">
+              <mat-checkbox
+                *ngIf="!node.data.linking && !node.data.unlinking && !node.data.isEditingName && !node.data.isSavingName"
+                color="primary"
+                [checked]="node.data.selected"
+                (change)="uTagSelectionChange(node.data)">
+                {{ node.data.name }}
+              </mat-checkbox>
+              <div *ngIf="node.data.linking || node.data.unlinking || node.data.isSavingName" class="tree-node-crud-operation">
+                  <mat-spinner diameter="16"></mat-spinner>
+                  <span>Enregistrement en cours...</span>
+              </div>
+              <div *ngIf="node.data.isEditingName" class="tree-node-editing-name">
+                <mat-form-field>
+                  <input matInput #newTagName value="{{node.data.name}}" placeholder="Renommer le tag" maxlength="30">
+                </mat-form-field>
+                <button mat-button (click)="renameTag(node.data, newTagName.value)">Valider</button>
+                <button mat-button (click)="stopEditingTagName(node.data)">Annuler</button>
+              </div>
+              <div class="actions">
+                <div class="vertical-separator"></div>
+                <div><button mat-icon-button (click)="editTagName(node.data)"><mat-icon>edit</mat-icon></button></div>
+                <div><button mat-icon-button><mat-icon>delete</mat-icon></button></div>
+              </div>
+          </div>
+
+
+        </div>
+      </div>
     </ng-template>
 
   </tree-root>

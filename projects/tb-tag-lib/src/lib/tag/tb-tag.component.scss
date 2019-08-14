@@ -1,47 +1,36 @@
-@import '~@angular/material/theming';
-.mat-tree-node {
-  background-color: white;
-  user-select: none;
-  cursor: move;  
-  &.cdk-drag-preview { // while dragging
-    @include mat-elevation(12);
-  }  &.cdk-drag-placeholder { // potential drop area
-    opacity: 0;
+/* 
+  ::ng-deep will be deprecated but no better solution for now
+*/
+::ng-deep {
+  mat-chip-list {
+    .mat-chip-list-wrapper {
+      justify-content: center;
+    }
   }
-}
-.drag-placeholder {
-  @include mat-elevation(12);
-  border: 2px dashed grey;
-}
-/* items moving away to make room for drop */
-.cdk-drop-list-dragging .mat-tree-node:not(.cdk-drag-placeholder) {
-  transition: transform 250ms cubic-bezier(0, 0, 0.2, 1);
-}
-/* item being dropped */
-.cdk-drag-animating {
-  transition: transform 200ms cubic-bezier(0, 0, 0.2, 1);
+  .tree-wrapper tree-root tree-viewport {
+    overflow: unset;
+  }
 }
 
 /* angular tree styles */
 .node-content-wrapper {
-  // padding-top: 5px;
-  // padding-bottom: 5px;
-  // tree-node-expander {
-  //  height: 40px;
-  //  display: flex;
-  //  flex-direction: column;
-  //  justify-content: center;
-  //  font-size: 30px;
-  // }
+  &:hover {
+    background-color: #fcfaf5;
+  }
+}
+.node-content-wrapper-active, .node-content-wrapper-focused {
+  background-color: #fcfaf5;
 }
 .tree-wrapper {
   text-align: center;
+  margin-top: 20px;
 
   .tree-row {
     display: flex;
     flex-direction: row;
     justify-content: space-between;
     align-items: center;
+    padding-left: 5px;
     .actions {
       color: lightgrey;
       display: flex;

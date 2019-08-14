@@ -650,7 +650,14 @@ export class TbTagComponent implements OnInit {
         }
       );
     }
+  }
 
+  /**
+   * Expand / collapse a tree node
+   * @param node provided by angular-tree
+   */
+  expandNode(node: TreeNode): void {
+    if (node.isExpanded) { node.collapse(); } else { node.expand(); }
   }
 
   /**
