@@ -396,7 +396,7 @@ export class TbTagComponent implements OnInit {
   public findTagByNameAndPath(tags: Array<TbTag>, name: string, path: string): TbTag {
     let result, subResult;
     tags.forEach(tag => {
-      if (tag.name === name && tag.path === path) {
+      if (tag.name.toLowerCase() === name.toLocaleLowerCase() && tag.path.toLowerCase() === path.toLowerCase()) {
         result = tag;
       } else if (tag.children) {
         subResult = this.findTagByNameAndPath(tag.children, name, path);
@@ -425,22 +425,26 @@ export class TbTagComponent implements OnInit {
    */
   createNewTag(value: string) {
     console.log(value);
-    this.isCreatingNewTag = false;
+    if (this.findTagByNameAndPath(this.userTagsObservable.getValue(), value, '/') == null) {
+      this.isCreatingNewTag = false;
 
-    const clonedUserTags = this.cloneTags(this.userTagsObservable.getValue());
+      const clonedUserTags = this.cloneTags(this.userTagsObservable.getValue());
 
-    this.apiCreatingNewTag = true;
-    this.tagService.createTag(value, '/').subscribe(
-      result => {
-        clonedUserTags.push(result);
-        this.userTagsObservable.next(clonedUserTags);
-        // this.uTagSelectionChange(result); /* uncomment for the tag to be selected immediately after its creation */
-        this.apiCreatingNewTag = false;
-      }, error => {
-        // @Todo manage error
-        this.apiCreatingNewTag = false;
-      }
-    );
+      this.apiCreatingNewTag = true;
+      this.tagService.createTag(value, '/').subscribe(
+        result => {
+          clonedUserTags.push(result);
+          this.userTagsObservable.next(clonedUserTags);
+          // this.uTagSelectionChange(result); /* uncomment for the tag to be selected immediately after its creation */
+          this.apiCreatingNewTag = false;
+        }, error => {
+          // @Todo manage error
+          this.apiCreatingNewTag = false;
+        }
+      );
+    } else {
+      console.log(`Le tag '${value}' est déjà présent dans vos tags. Vous ne pouvez pas l'ajouter un seconde fois`);
+    }
   }
 
   // ************************
