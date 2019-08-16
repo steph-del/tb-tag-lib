@@ -44,6 +44,7 @@ export class TbTagComponent implements OnInit {
   @Input() apiTagsRelationsPath = '/api/photo_tags/{id}/photo_relations';
   @Input() set basicTags(data: Array<TbTag>) {
     // this.basicTagsSet = true;
+    data.map(bTag => bTag.path = '/');
     this._basicTags = data;
     this.tagService.setBasicTags(data);
   }
@@ -55,6 +56,7 @@ export class TbTagComponent implements OnInit {
 
   _basicTags: Array<TbTag>;
   _objectId: number;
+  basicTagsByCategory: Array<Array<TbTag>> = [];
   userTags: Array<TbTag>;
   userTagsObservable = new BehaviorSubject<Array<TbTag>>([]);
   objectsTags: Array<TbTag> = [];
@@ -144,6 +146,9 @@ export class TbTagComponent implements OnInit {
 
     // this.treeDataSource = new MatTreeFlatDataSource(this.treeControl, this.treeFlattener);
 
+    // basic tags
+    this.tagService.getBasicTagsByCategory().subscribe(_tags => this.basicTagsByCategory = _tags);
+
     // User tags subscriber
     this.userTagsObservable.subscribe(
       newUserTags => {
@@ -194,10 +199,43 @@ export class TbTagComponent implements OnInit {
   }
 
   /**
-   * When user click on a basic tag
+   * When user select a basic tag, we create a new tag in db and then do the link
    */
-  basicTagClicked(bTag: TbTag): void {
+  addBasicTagToUserTags(bTag: TbTag): void {
     console.log(bTag);
+
+    if (this.findTagByNameAndPath(this.userTagsObservable.getValue(), bTag.name, bTag.path) == null) {
+      this.isCreatingNewTag = false;
+
+      const clonedUserTags = this.cloneTags(this.userTagsObservable.getValue());
+
+      this.apiCreatingNewTag = true;
+      bTag.loading = true;
+      this.tagService.createTag(bTag.name, bTag.path).subscribe(
+        result => {
+          clonedUserTags.push(result);
+          this.userTagsObservable.next(clonedUserTags);
+          bTag.loading = false;
+          this.uTagSelectionChange(result); /* uncomment for the tag to be selected immediately after its creation */
+          this.apiCreatingNewTag = false;
+        }, error => {
+          // @Todo manage error
+          bTag.loading = false;
+          this.apiCreatingNewTag = false;
+        }
+      );
+    } else {
+      console.log(`Le tag '${bTag.name}' est déjà présent dans vos tags. Vous ne pouvez pas l'ajouter un seconde fois`);
+    }
+  }
+
+  basicTagAlreadyExistsInUserTags(bTag: TbTag): boolean {
+    const uTags = this.userTagsObservable.getValue();
+    if (this.findTagByNameAndPath(uTags, bTag.name, bTag.path)) {
+      return true;
+    } else {
+      return false;
+    }
   }
 
   /**
@@ -353,6 +391,22 @@ export class TbTagComponent implements OnInit {
   }
 
   /**
+   * Recursively parse an array of tags and get the tag with the given name/path values
+   */
+  public findTagByNameAndPath(tags: Array<TbTag>, name: string, path: string): TbTag {
+    let result, subResult;
+    tags.forEach(tag => {
+      if (tag.name === name && tag.path === path) {
+        result = tag;
+      } else if (tag.children) {
+        subResult = this.findTagByNameAndPath(tag.children, name, path);
+        if (subResult) { result = subResult; }
+      }
+    });
+    return result;
+  }
+
+  /**
    * Recursively parse an array of tags and remove the tag with the given id
    */
   public removeTagById(tags: Array<TbTag>, id: number): void {
@@ -392,12 +446,6 @@ export class TbTagComponent implements OnInit {
   // ************************
   // TAGS AND RELATES OBJECTS
   // ************************
-
-  /**
-   * When user select a basic tag, we create a new tag in db and then do the link
-   */
-  addBasicTagToUserTags(tag: TbTag) { }
-
   getTagColor(tag: TbTag): 'primary' | 'none' {
     return tag.selected ? 'primary' : 'none';
   }

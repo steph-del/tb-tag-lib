@@ -40,13 +40,6 @@ export class TbTagService {
   public setUsersTags(tags: Array<TbTag>): void { this.usersTags.next(tags); }
   public setUserId(userId: number): void { this.userId = userId; }
 
-  getBasicTags(): Observable<Array<TbTag>> {
-    if (this.basicTags) {
-      return of(this.basicTags);
-    } else {
-      return of(null);
-    }
-  }
 
   getUserTags(userId: number): Observable<Array<TbTag>> {
     return this.http.get<Array<TbTag>>(`${this.baseApiUrl}${this.tagEndpoint}.json`).pipe(
@@ -249,5 +242,48 @@ export class TbTagService {
           }
         })
       );
+  }
+
+  // **********
+  // BASIC TAGS
+  // **********
+  private getBasicTags(): Observable<Array<TbTag>> {
+    if (this.basicTags) {
+      return of(this.basicTags);
+    } else {
+      return of(null);
+    }
+  }
+
+  private getUniqueBasicTagsCategories() {
+    const tagCategories: string[] = [];
+    let i = 0;
+    for (const tag of this.basicTags) {
+      if (i === 0) {
+        tagCategories.push(tag.category);
+      } else {
+        if (tagCategories.indexOf(tag.category) === -1) {
+          tagCategories.push(tag.category);
+        }
+      }
+      i++;
+    }
+    return tagCategories;
+  }
+
+  public getBasicTagsByCategory() {
+    const categories: Array<string> = this.getUniqueBasicTagsCategories();
+    const response: any = [];
+    let i = 0;
+    categories.forEach(category => {
+      response[i] = [];
+      for (const bTag of this.basicTags) {
+        if (bTag.category === category) {
+          response[i].push(bTag);
+        }
+      }
+      i++;
+    });
+    return of(response);
   }
 }

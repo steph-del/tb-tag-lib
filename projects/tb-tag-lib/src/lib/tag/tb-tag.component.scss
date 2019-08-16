@@ -20,6 +20,43 @@
   }
 }
 
+.tag-container {
+  text-align: center;
+  .category-title {
+    font-weight: bold;
+  }
+  .basicTagsByCategories {
+    display: flex;
+    flex-direction: row;
+    align-items: normal;
+    justify-content: center;
+    padding: 0 10px 10px;
+    margin-top: 15px;
+    .category {
+      display: flex;
+      align-items: center;
+      color: grey;
+      font-variant: small-caps;
+      margin-right: 15px;
+      border-right: 1px solid gray;
+      padding-right: 15px;
+      padding-top: 5px;
+      padding-bottom: 5px;
+    }
+  }
+  .userTags {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    padding: 0 10px 10px;
+    margin-top: 15px;
+  }
+}
+
+hr {
+  color: lightgrey;
+}
+
 .delete-tag-wrapper {
   margin: 20px;
   display: flex;

@@ -12,6 +12,7 @@ import { TbTagComponent } from './tag/tb-tag.component';
 import { TreeModule } from 'angular-tree-component';
 
 import { TreeService } from './_services/tb-tree.service';
+import { UnslashPipe } from './_pipes/unslash.pipe';
 
 @NgModule({
   imports: [
@@ -25,7 +26,7 @@ import { TreeService } from './_services/tb-tree.service';
     MatCardModule, MatTooltipModule
   ],
   entryComponents: [],
-  declarations: [TbTagTreeComponent, TbTagComponent],
+  declarations: [TbTagTreeComponent, TbTagComponent, UnslashPipe],
   exports: [TbTagTreeComponent, TbTagComponent]
 })
 export class TbTagLibModule {

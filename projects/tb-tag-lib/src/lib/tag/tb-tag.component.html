@@ -1,19 +1,39 @@
 <!-- basic tags chips -->
-<mat-chip-list>
-  <mat-chip *ngFor="let bTag of basicTags" (click)="basicTagClicked(bTag)">{{ bTag.namae }}</mat-chip>
-</mat-chip-list>
+<div class="tag-container">
+  <p *ngIf="basicTagsByCategory.length > 0" class="category-title">Tags suggérés</p>
+  <div *ngFor="let cat of basicTagsByCategory" class="basicTagsByCategories">
+    <div class="category">{{ cat[0].category | unslash }}</div>
+    <mat-chip-list>
+      <mat-chip
+        *ngFor= "let bTag of cat"
+        color="none"
+        selected="true"
+        disabled="false"
+        (click)="addBasicTagToUserTags(bTag)">
+        {{ bTag.name }}
+        <mat-spinner class="tagSpinner" diameter="16" *ngIf="bTag.loading"></mat-spinner>
+      </mat-chip>
+    </mat-chip-list>
+  </div>
+</div>
+
+<hr />
 
 <!-- user's tags chips -->
-<mat-chip-list class="chip-list">
-  <mat-chip *ngFor="let uTag of userTagsObservable | async"
-            [color]="getTagColor(uTag)"
-            selected="true"
-            (click)="uTagSelectionChange(uTag)">
-            {{ uTag.name }}
-            <mat-spinner class="tagSpinner" diameter="16" *ngIf="uTag.linking"></mat-spinner>
-            <mat-spinner class="tagSpinner" diameter="16" color="accent" *ngIf="uTag.unlinking"></mat-spinner>
-  </mat-chip>
-</mat-chip-list>
+<div class="tag-container">
+  <div class="category-title">Mes tags</div>
+  <div class="userTags">
+    <mat-chip-list class="chip-list">
+      <mat-chip *ngFor="let uTag of userTagsObservable | async"
+                [color]="getTagColor(uTag)"
+                selected="true"
+                (click)="uTagSelectionChange(uTag)">
+                {{ uTag.name }}
+                <mat-spinner class="tagSpinner" diameter="16" *ngIf="uTag.linking"></mat-spinner>
+                <mat-spinner class="tagSpinner" diameter="16" color="accent" *ngIf="uTag.unlinking"></mat-spinner>
+      </mat-chip>
+    </mat-chip-list>
+</div>
 
 <!-- delete tag -->
 <div *ngIf="isDeletingTag && tagToBeDeleted !== null" class="delete-tag-wrapper">
