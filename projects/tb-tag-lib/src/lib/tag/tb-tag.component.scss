@@ -121,6 +121,7 @@ hr {
   
   .tree-node-editing-name {
     @include spinner-div();
+    align-items: center;
     button {
       max-height: 35px;
     }

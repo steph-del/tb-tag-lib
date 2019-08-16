@@ -24,7 +24,7 @@
   <div class="category-title">Mes tags</div>
   <div class="userTags">
     <mat-chip-list class="chip-list">
-      <mat-chip *ngFor="let uTag of userTagsObservable | async"
+      <mat-chip *ngFor="let uTag of userTags"
                 [color]="getTagColor(uTag)"
                 selected="true"
                 (click)="uTagSelectionChange(uTag)">
@@ -75,6 +75,7 @@
     </mat-card-actions>
   </mat-card>      
 </div>
+
 <!-- tree -->
 <div class="tree-wrapper">
   <tree-root
@@ -83,6 +84,7 @@
     [options]="options"
     [focused]="true"
     [nodes]="tree"
+    (dragstart)="dragStart()"
     (moveNode)="moveNode($event)">
 
     <ng-template #treeNodeWrapperTemplate let-node let-index="index">
@@ -120,9 +122,11 @@
               </div>
               <div *ngIf="node.data.isEditingName" class="tree-node-editing-name">
                 <mat-form-field>
-                  <input matInput #newTagName value="{{node.data.name}}" placeholder="Renommer le tag" maxlength="30">
+                  <input matInput #newTagName [formControl]="editTagInput" value="{{node.data.name}}" placeholder="Renommer le tag" maxlength="30">
+                  <mat-hint align="end">{{newTagName.value?.length || 0}}/30</mat-hint>
+                  <mat-error *ngIf="editTagInput.hasError('containsSlash')">Le caractère '/' est interdit</mat-error>
                 </mat-form-field>
-                <button mat-button (click)="renameTag(node.data, newTagName.value)">Valider</button>
+                <button mat-button (click)="renameTag(node.data, newTagName.value)" [disabled]="!editTagInput.valid">Valider</button>
                 <button mat-button (click)="stopEditingTagName(node.data)">Annuler</button>
               </div>
               <div class="actions">
@@ -157,9 +161,11 @@
 
   <div *ngIf="isCreatingNewTag && !apiCreatingNewTag" class="tag-creation">
     <mat-form-field>
-      <input matInput #createTagValue placeholder="Nom du nouveau tag">
+      <input matInput #createTagValue [formControl]="newTagInput" placeholder="Nom du nouveau tag" maxlength="30">
+      <mat-hint align="end">{{createTagValue.value?.length || 0}}/30</mat-hint>
+      <mat-error *ngIf="newTagInput.hasError('containsSlash')">Le caractère '/' est interdit</mat-error>
     </mat-form-field>
-    <button mat-button (click)="createNewTag(createTagValue.value)">Valider</button>
+    <button mat-button (click)="createNewTag(createTagValue.value)" [disabled]="!newTagInput.valid">Valider</button>
     <button mat-button (click)="isCreatingNewTag = false">Annuler</button>
   </div>
 

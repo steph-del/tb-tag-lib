@@ -1,7 +1,7 @@
 // TODO PREVENT SENDING FORM FOR ALL BUTTONS
 
 import { Component, OnInit, Input, Output, EventEmitter, OnChanges, SimpleChanges, ViewChild } from '@angular/core';
-import { FormBuilder } from '@angular/forms';
+import { FormBuilder, FormControl } from '@angular/forms';
 
 import { Observable, BehaviorSubject, VirtualAction, zip } from 'rxjs';
 
@@ -71,6 +71,10 @@ export class TbTagComponent implements OnInit {
   apiLoadingRelatedObects = false;
   apiDeletingTag = false;
 
+  // form
+  newTagInput: FormControl;
+  editTagInput: FormControl;
+
   // tree
   zipTagPathRename: Array<Observable<any>> = [];
   state: ITreeState = {
@@ -98,6 +102,7 @@ export class TbTagComponent implements OnInit {
 
 
   tree: Array<TbTag> = [];
+  userTagsAtDragStart: Array<TbTag>;
   // treeDataSource: MatTreeFlatDataSource<NgTreeNode, any>;
   // expandedNodeSet = new Set<string>();
   // dragging = false;
@@ -126,6 +131,9 @@ export class TbTagComponent implements OnInit {
     private tagService: TbTagService,
     private fb: FormBuilder) { }
 
+  static noSlash(control: FormControl) {
+    return control.value.indexOf('/') === -1 ? null : { containsSlash: true };
+  }
 
   ngOnInit() {
     // objectId provided ?
@@ -155,12 +163,19 @@ export class TbTagComponent implements OnInit {
         // update tree
         if (newUserTags.length > 0) {
           // this.rebuildTreeForData(this.tagService.buildTree(newUserTags));
+          console.log('REBIULDING TREE WITH DATA : ');
+          console.log(newUserTags);
+          this.userTags = newUserTags;
           this.tree = this.tagService.buildTree(newUserTags);
         }
       }, error => {
         //
       }
     );
+
+    // Form input
+    this.newTagInput = new FormControl('', [TbTagComponent.noSlash]);
+    this.editTagInput = new FormControl('', [TbTagComponent.noSlash]);
 
     // Start by getting both user tags and related object tags
     let _uTags: Array<TbTag>; // user tags
@@ -283,10 +298,15 @@ export class TbTagComponent implements OnInit {
 
   /**
    * When user click on the edit button inside the tree
+   * Before editing the tag, we toggle `isEditingName` for every user's tag to `false`
    * @param node from the tree
    */
   editTagName(node: TbTag): void {
-    node.isEditingName = true;
+    const uTags = this.userTagsObservable.getValue();
+    this.stopEditingTagsName(uTags);
+    const tagToEdit = this.findTagById(uTags, node.id);
+    if (tagToEdit) { tagToEdit.isEditingName = true; }
+    this.userTagsObservable.next(uTags);
   }
    /**
    * When user click on the cancel edit button inside the tree
@@ -294,12 +314,28 @@ export class TbTagComponent implements OnInit {
    */
   stopEditingTagName(node: TbTag): void {
     node.isEditingName = false;
+    const uTags = this.userTagsObservable.getValue();
+    const stopEditingTag = this.findTagById(uTags, node.id);
+    if (stopEditingTag) { stopEditingTag.isEditingName = false; }
+  }
+
+  /**
+   * Recursively stop editing tags
+   */
+  stopEditingTagsName(tags: Array<TbTag>): void {
+    for (const tag of tags) {
+      tag.isEditingName = false;
+      if (tag.children && tag.children.length > 0) {
+        this.stopEditingTagsName(tag.children);
+      }
+    }
   }
 
   /**
    * When user validate a new name (click on the 'Validate' button)
    * @param node from the tree
    * @param newValue from the input
+   * @TODO rename children paths !!
    */
   renameTag(node: TbTag, newValue: string): void {
     this.stopEditingTagName(node);
@@ -418,6 +454,19 @@ export class TbTagComponent implements OnInit {
       }
     });
   }
+
+  /*public treeFlatten(tree: Array<TbTag>): Array<TbTag> {
+    let result: Array<TbTag> = [];
+    let subResult: Array<TbTag> = [];
+    tree.forEach(tag => {
+        result.push(tag);
+      if (tag.children) {
+        subResult = this.treeFlatten(tag.children);
+        if (subResult) { result.push(...subResult); }
+      }
+    });
+    return result;
+  }*/
 
   /**
    * When user create a new tag
@@ -698,6 +747,16 @@ export class TbTagComponent implements OnInit {
   }*/
 
   /**
+   * At drag start, save current user's tags value
+   * This allow to set the tree at its previous state if drop is not possible or if it aborts
+   */
+  dragStart(): void {
+    console.log('userTagsAtDragStart');
+    this.userTagsAtDragStart = this.userTagsObservable.getValue();
+    console.log(this.userTagsAtDragStart);
+  }
+
+  /**
    * When user moves a node inside the tree
    * @param event provided by angular-tree
    */
@@ -707,23 +766,64 @@ export class TbTagComponent implements OnInit {
     console.log('GET NODE BY INDEX', event.to.index);
     console.log(event.treeModel.getNodeById(event.to.index));
 
+    const uTags = this.userTagsObservable.getValue();
+
     this.renameNodePaths(event.node, event.to.parent);
-    console.log(this.zipTagPathRename);
-    if (this.zipTagPathRename.length > 0) {
-      this.apiRenamingTagPath = true;
-      const zipCall = zip(...this.zipTagPathRename).subscribe(
-        results => {
-          this.zipTagPathRename = [];
-          console.log(results);
-          this.apiRenamingTagPath = false;
-        }, error => {
-          // @Todo notify user & reload entire tree
-          this.zipTagPathRename = [];
-          console.log(error);
-          this.apiRenamingTagPath = false;
-        }
-      );
+
+    // check path length
+    if (event.node.path.length > 255) {
+      // set previous tags value
+      // @Todo notify user
+      console.log('ABORT DRAG AND DROP, PATH OVERSIZE');
+      if (this.userTagsAtDragStart) { this.userTagsObservable.next(this.userTagsAtDragStart); }
+      this.userTagsAtDragStart = null;
+    } else {
+      console.log(this.zipTagPathRename);
+      if (this.zipTagPathRename.length > 0) {
+        this.apiRenamingTagPath = true;
+        const zipCall = zip(...this.zipTagPathRename).subscribe(
+          results => {
+            const updatedTags = this.assignTagsValues(uTags, results);
+            console.log('updatedTags');
+            console.log(updatedTags);
+            this.zipTagPathRename = [];
+            // this.userTagsObservable.next(updatedTags);
+            // No need to rebuild tree, just update tags chips data
+            this.userTags = updatedTags;
+            this.userTagsAtDragStart = null;
+            this.apiRenamingTagPath = false;
+          }, error => {
+            this.zipTagPathRename = [];
+            console.log(error);
+            this.userTagsObservable.next(this.userTagsAtDragStart);
+            // @Todo notify user & reload entire tree
+            this.userTagsAtDragStart = null;
+            this.apiRenamingTagPath = false;
+          }
+        );
+      }
     }
+  }
+
+  /**
+   * Parse the initialTags array and assign newTags value by their ids
+   * Be carefull, this method is not recursive (no children parse) !
+   */
+  assignTagsValues(initialTags: Array<TbTag>, newTags: Array<TbTag>): Array<TbTag> {
+    console.log('---');
+    console.log(initialTags);
+    console.log(newTags);
+    const clonedInitialTags = _.clone(initialTags);
+    for (const nT of newTags) {
+      // let tagToUpdate: TbTag;
+      for (let cIT of clonedInitialTags) {
+        if (cIT.id === nT.id) { console.log('!!!!!', _.clone(cIT), _.clone(nT)); cIT.name = nT.name; cIT.path = nT.path; console.log('!!! NEW CIT:', _.clone(cIT)); }
+      }
+      // if (tagToUpdate) { tagToUpdate = nT; }
+    }
+    console.log('000');
+    console.log(_.clone(clonedInitialTags));
+    return clonedInitialTags;
   }
 
   /**

@@ -73,19 +73,20 @@ export class TbTagService {
     const names = tags.map(t => t.name);
     const paths = tags.map(t => t.path.split('/')).filter(el => !this.isEmptyArray(el)).map(a => this.removeEmptyStringInArray(a));
     const uniquPaths = this.flattenStringArray(paths).filter((v, i, a) => a.indexOf(v) === i); // filter removes duplicate entries
+    const clonedTags = _.clone(tags);
 
     let namesTable: Array<[string, string]>;
     for (const n of names) {
       if (namesTable && namesTable.length > 0) { namesTable.push([n, this.removeAccentAndUpperCase(n)]); } else { namesTable = [[n, this.removeAccentAndUpperCase(n)]]; }
     }
 
-    for (const item of tags) {
+    for (const item of clonedTags) {
       for (const name of namesTable) {
-        if (item.path.indexOf(name[1]) !== -1) { item.path = item.path.replace(name[1], name[0]); }
+        if (item.path.indexOf(name[0]) !== -1) { item.path = item.path.replace(name[0], name[1]); }
       }
     }
 
-    return tags;
+    return clonedTags;
   }
 
   private isEmptyArray(array: Array<string>): boolean {
@@ -114,7 +115,7 @@ export class TbTagService {
   }
 
   public removeAccentAndUpperCase(str: string): string {
-    return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+    return _.clone(str).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
   }
 
   // *********
@@ -145,9 +146,20 @@ export class TbTagService {
     // 1...x depth
     for (let index = 1; index < Object.keys(tagsGroupedByLength).length; index++) {
       for (const tag of tagsGroupedByLength[index]) {
+        // console.log('___', tag, index, tagsGroupedByLength);
         const arrayPaths = tag.path.split('/').filter(p => p !== '');
-        const parentTag = _.find(tagsGroupedByLength[index - 1], t => t.name === arrayPaths[index - 1]);
-        !parentTag.children || parentTag.children.length === 0 ? parentTag.children = [tag] : parentTag.children.push(tag);
+        let parentTag;
+        try {
+          parentTag = _.find(tagsGroupedByLength[index - 1], t => this.removeAccentAndUpperCase(t.name) === arrayPaths[index - 1]);
+          !parentTag.children || parentTag.children.length === 0 ? parentTag.children = [tag] : parentTag.children.push(tag);
+        } catch (e) {
+          console.log('!!!!!!!!!!!!!!!!');
+          console.log('arrayPaths: ', arrayPaths);
+          console.log('tag: ', tag);
+          console.log('index: ', index);
+          console.log('tagsGroupedByLength: ', tagsGroupedByLength);
+          console.log('parent tag: ', parentTag);
+        }
       }
     }
 
