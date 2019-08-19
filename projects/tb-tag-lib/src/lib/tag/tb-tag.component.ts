@@ -331,7 +331,8 @@ export class TbTagComponent implements OnInit {
 
     this.stackObservables.push(this.tagService.updateTagName(node));
 
-    this.parseChildNodesAndRenamePath(node, `/${oldValue}/`, `/${newValue}/`); // REPLACE /OLDVALUE/ BY /NEWVALUE/ (slashes to avoid path name 'side effect')
+    // REPLACE /OLDVALUE/ BY /NEWVALUE/ (slashes to avoid changes for near-named tag path)
+    this.parseChildNodesAndRenamePath(node, `/${this.tagService.removeAccentAndUpperCase(oldValue)}/`, `/${this.tagService.removeAccentAndUpperCase(newValue)}/`);
 
     if (this.stackObservables.length > 0) {
       const zipCall = zip(...this.stackObservables).subscribe(
