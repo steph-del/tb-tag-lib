@@ -103,29 +103,6 @@ export class TbTagComponent implements OnInit {
 
   tree: Array<TbTag> = [];
   userTagsAtDragStart: Array<TbTag>;
-  // treeDataSource: MatTreeFlatDataSource<NgTreeNode, any>;
-  // expandedNodeSet = new Set<string>();
-  // dragging = false;
-  // expandTimeout: any;
-  // expandDelay = 1000;
-  // treeDisabled = false;
-
-  /*_transformer = (node: NgTreeNode, level: number) => {
-    return new TreeFlatNode(
-      node.id.toString(),
-      !!node.children && node.children.length > 0,
-      node.name,
-      node.path,
-      level,
-      node.type,
-      node.selected
-    );
-  }*/
-
-  // tslint:disable-next-line:member-ordering
-  // treeFlattener = new MatTreeFlattener(this._transformer, node => node.level, node => node.expandable, node => node.children);
-  // tslint:disable-next-line:member-ordering
-  // treeControl = new FlatTreeControl<TreeFlatNode>(node => node.level, node => node.expandable);
 
   constructor(
     private tagService: TbTagService,
@@ -163,8 +140,6 @@ export class TbTagComponent implements OnInit {
         // update tree
         if (newUserTags.length > 0) {
           // this.rebuildTreeForData(this.tagService.buildTree(newUserTags));
-          console.log('REBIULDING TREE WITH DATA : ');
-          console.log(newUserTags);
           this.userTags = newUserTags;
           this.tree = this.tagService.buildTree(newUserTags);
         }
@@ -198,11 +173,6 @@ export class TbTagComponent implements OnInit {
     );
   }
 
-  // *********
-  // USER TAGS
-  // *********
-  // this.userTagsObservable;
-
   // ********
   // TAG CRUD
   // ********
@@ -217,8 +187,6 @@ export class TbTagComponent implements OnInit {
    * When user select a basic tag, we create a new tag in db and then do the link
    */
   addBasicTagToUserTags(bTag: TbTag): void {
-    console.log(bTag);
-
     if (this.findTagByNameAndPath(this.userTagsObservable.getValue(), bTag.name, bTag.path) == null) {
       this.isCreatingNewTag = false;
 
@@ -390,50 +358,6 @@ export class TbTagComponent implements OnInit {
     }
   }
 
-  /**
-   * When user click on an user's tag
-   * DELETE
-   */
-  /*userTagSelectionChange(uTag: TbTag): void {
-    const clonedUserTags = this.cloneTags(this.userTagsObservable.getValue());
-    const clonedUTag = this.findTagById(clonedUserTags, uTag.id);
-    const nodeTagInArray = this.findTagById(this.treeDataSource.data, uTag.id);
-
-    if (clonedUTag.selected) {
-      // unlink to object
-      uTag.unlinking = true;
-      nodeTagInArray.unlinking = true;
-      this.tagService.unlinkTagToObject(clonedUTag.id, this._objectId).subscribe(
-        result => {
-          clonedUTag.selected = false;
-          uTag.unlinking = false;
-          nodeTagInArray.unlinking = false;
-          this.userTagsObservable.next(clonedUserTags);
-        }, error => {
-          uTag.unlinking = false;
-          nodeTagInArray.unlinking = false;
-        }
-      );
-    } else {
-      // link to object
-      uTag.linking = true;
-      nodeTagInArray.linking = true;
-      this.tagService.linkTagToObject(clonedUTag.id, this._objectId).subscribe(
-        result => {
-          // reload tree
-          clonedUTag.selected = true;
-          uTag.linking = false;
-          nodeTagInArray.linking = false;
-          this.userTagsObservable.next(clonedUserTags);
-        }, error => {
-          console.log(error);
-          uTag.linking = false;
-          nodeTagInArray.linking = false;
-        }
-      );
-    }
-  }*/
-
   public cloneTags(tags: Array<TbTag>): Array<TbTag> {
     return _.cloneDeep(tags);
   }
@@ -483,25 +407,11 @@ export class TbTagComponent implements OnInit {
     });
   }
 
-  /*public treeFlatten(tree: Array<TbTag>): Array<TbTag> {
-    let result: Array<TbTag> = [];
-    let subResult: Array<TbTag> = [];
-    tree.forEach(tag => {
-        result.push(tag);
-      if (tag.children) {
-        subResult = this.treeFlatten(tag.children);
-        if (subResult) { result.push(...subResult); }
-      }
-    });
-    return result;
-  }*/
-
   /**
    * When user create a new tag
    * @param value entered by the user
    */
   createNewTag(value: string) {
-    console.log(value);
     if (this.findTagByNameAndPath(this.userTagsObservable.getValue(), value, '/') == null) {
       this.isCreatingNewTag = false;
 
@@ -547,241 +457,11 @@ export class TbTagComponent implements OnInit {
   // ******************
 
   /**
-   * Handle the drop - here we rearrange the data based on the drop event,
-   * then rebuild the tree.
-   * */
-  /*drop(event: CdkDragDrop<string[]>) {
-    // construct a list of visible nodes, this will match the DOM.
-    const visibleNodes = this.visibleNodes();
-
-    // deep clone the data source so we can mutate it
-    const changedData = JSON.parse(JSON.stringify(this.treeDataSource.data));
-    const initialData: Array<TbTag> = JSON.parse(JSON.stringify(this.treeDataSource.data));
-    console.log('initialData :');
-    console.log(initialData);
-
-    // recursive find function to find siblings of node
-    function findNodeSiblings(arr: Array<any>, id: string): Array<any> {
-      let result, subResult;
-      arr.forEach(item => {
-        if (item.id.toString() === id) {
-          result = arr;
-        } else if (item.children) {
-          subResult = findNodeSiblings(item.children, id);
-          if (subResult) { result = subResult; }
-        }
-      });
-      return result;
-    }
-
-    // remove the node from its old place
-    const node = event.item.data;
-
-    // console.log('-------');
-    // console.log(findNodeSiblings(changedData, node.id));
-
-    const siblings = findNodeSiblings(changedData, node.id);
-    const siblingIndex = siblings.findIndex(n => n.id.toString() === node.id.toString());
-    const nodeToInsert: NgTreeNode = siblings.splice(siblingIndex, 1)[0];
-
-    // determine where to insert the node
-    const nodeAtDest = visibleNodes[event.currentIndex];
-    if (nodeAtDest.id === nodeToInsert.id) { return; }
-
-    // determine drop index relative to destination array
-    let relativeIndex = event.currentIndex; // default if no parent
-    const nodeAtDestFlatNode = this.treeControl.dataNodes.find(n => nodeAtDest.id.toString() === n.id);
-    const parent = this.getParentNode(nodeAtDestFlatNode);
-    if (parent) {
-      const parentIndex = visibleNodes.findIndex(n => n.id.toString() === parent.id) + 1;
-      relativeIndex = event.currentIndex - parentIndex;
-    }
-
-    // get siblings
-    const newSiblings = findNodeSiblings(changedData, nodeAtDest.id.toString());
-
-    // get node destination
-    const nodeDestination = visibleNodes[event.currentIndex]; // OK !!!
-
-    console.log('node destination :');
-    console.log(nodeDestination);
-
-    // API CALL... THEN INSERT NODE AND REBUILD TREE IF SUCCESS
-    this.treeDisabled = true;
-    setTimeout(() => {
-      // insert node
-      newSiblings.splice(relativeIndex, 0, nodeToInsert);
-
-      // rebuild tree with mutated data
-      this.rebuildTreeForData(changedData);
-
-      this.treeDisabled = false;
-    }, 1000);
-
-  }*/
-
-  /**
-   * This constructs an array of nodes that matches the DOM,
-   * and calls rememberExpandedTreeNodes to persist expand state
-   */
-  /*visibleNodes(): NgTreeNode[] {
-    this.rememberExpandedTreeNodes(this.treeControl, this.expandedNodeSet);
-    const result = [];
-
-    function addExpandedChildren(node: NgTreeNode, expanded: Set<string>) {
-      result.push(node);
-      if (node.children && expanded.has(node.id.toString())) {
-        node.children.map(child => addExpandedChildren(child, expanded));
-      }
-    }
-    this.treeDataSource.data.forEach(node => {
-      addExpandedChildren(node, this.expandedNodeSet);
-    });
-    console.log('visible nodes :');
-    console.log(result);
-    return result;
-  }*/
-
-  // tslint:disable-next-line:no-shadowed-variable
-  // hasChild = (_: number, node: TreeFlatNode) => node.expandable;
-
-  /**
-   * The following methods are for persisting the tree expand state
-   * after being rebuilt
-   */
-
-  /*rebuildTreeForData(data: any) {
-    this.rememberExpandedTreeNodes(this.treeControl, this.expandedNodeSet);
-    this.treeDataSource.data = data;
-    this.forgetMissingExpandedNodes(this.treeControl, this.expandedNodeSet);
-    this.expandNodesById(this.treeControl.dataNodes, Array.from(this.expandedNodeSet));
-  }*/
-
-  /*private rememberExpandedTreeNodes(
-    treeControl: FlatTreeControl<TreeFlatNode>,
-    expandedNodeSet: Set<string>
-  ) {
-    if (treeControl.dataNodes) {
-      treeControl.dataNodes.forEach((node) => {
-        if (treeControl.isExpandable(node) && treeControl.isExpanded(node)) {
-          // capture latest expanded state
-          expandedNodeSet.add(node.id);
-        }
-      });
-    }
-  }*/
-
-  /*private forgetMissingExpandedNodes(
-    treeControl: FlatTreeControl<TreeFlatNode>,
-    expandedNodeSet: Set<string>
-  ) {
-    if (treeControl.dataNodes) {
-      expandedNodeSet.forEach((nodeId) => {
-        // maintain expanded node state
-        if (!treeControl.dataNodes.find((n) => n.id === nodeId)) {
-          // if the tree doesn't have the previous node, remove it from the expanded list
-          expandedNodeSet.delete(nodeId);
-        }
-      });
-    }
-  }*/
-
-  /*private expandNodesById(flatNodes: TreeFlatNode[], ids: string[]) {
-    if (!flatNodes || flatNodes.length === 0) { return; }
-    const idSet = new Set(ids);
-    return flatNodes.forEach((node) => {
-      if (idSet.has(node.id)) {
-        this.treeControl.expand(node);
-        let parent = this.getParentNode(node);
-        while (parent) {
-          this.treeControl.expand(parent);
-          parent = this.getParentNode(parent);
-        }
-      }
-    });
-  }*/
-
-  /*private getParentNode(node: TreeFlatNode): TreeFlatNode | null {
-    const currentLevel = node.level;
-    if (currentLevel < 1) {
-      return null;
-    }
-    const startIndex = this.treeControl.dataNodes.indexOf(node) - 1;
-    for (let i = startIndex; i >= 0; i--) {
-      const currentNode = this.treeControl.dataNodes[i];
-      if (currentNode.level < currentLevel) {
-        return currentNode;
-      }
-    }
-    return null;
-  }*/
-
-  /**
-   * When user click on the tree node checkbox
-   */
-  /*public toggleTreeNodeSelection(node: TbTag): void {
-    console.log(node);
-  }*/
-
-  /**
-   * Experimental - opening tree nodes as you drag over them
-   */
-  /*dragStart() {
-    this.dragging = true;
-    for (const node of this.treeDataSource.data) {
-      const emptyChildTreeNode: NgTreeNode = {
-        id: -1,
-        userId: this.userId,
-        name: 'empty child',
-        path: '/',
-        type: '',
-        children: [],
-        selected: false
-      };
-      const emptyTreeNode: NgTreeNode = {
-        id: -1,
-        userId: this.userId,
-        name: 'empty',
-        path: '/',
-        type: '',
-        children: [emptyChildTreeNode],
-        selected: false
-      };
-      if (node.children.length === 0) {
-        node.children.push(emptyTreeNode);
-      }
-    }
-  }*/
-
-  /*dragEnd() {
-    this.dragging = false;
-  }*/
-
-  /*dragHover(node: TreeFlatNode) {
-    console.log('DRAG HOVER');
-    console.log(node);
-    if (this.dragging) {
-      clearTimeout(this.expandTimeout);
-      this.expandTimeout = setTimeout(() => {
-        this.treeControl.expand(node);
-      }, this.expandDelay);
-    }
-  }*/
-
-  /*dragHoverEnd() {
-    if (this.dragging) {
-      clearTimeout(this.expandTimeout);
-    }
-  }*/
-
-  /**
    * At drag start, save current user's tags value
    * This allow to set the tree at its previous state if drop is not possible or if it aborts
    */
   dragStart(): void {
-    console.log('userTagsAtDragStart');
     this.userTagsAtDragStart = this.userTagsObservable.getValue();
-    console.log(this.userTagsAtDragStart);
   }
 
   /**
@@ -789,11 +469,6 @@ export class TbTagComponent implements OnInit {
    * @param event provided by angular-tree
    */
   moveNode(event: {eventName: string, node: TbTag, to: {index: number, parent: any}, treeModel: TreeModel}) {
-    console.log('MOVE NODE : ');
-    console.log(event);
-    console.log('GET NODE BY INDEX', event.to.index);
-    console.log(event.treeModel.getNodeById(event.to.index));
-
     const uTags = this.userTagsObservable.getValue();
 
     this.renameNodePaths(event.node, event.to.parent);
@@ -806,7 +481,6 @@ export class TbTagComponent implements OnInit {
       if (this.userTagsAtDragStart) { this.userTagsObservable.next(this.userTagsAtDragStart); }
       this.userTagsAtDragStart = null;
     } else {
-      console.log(this.stackObservables);
       if (this.stackObservables.length > 0) {
         this.apiRenamingTagPath = true;
         const zipCall = zip(...this.stackObservables).subscribe(
@@ -836,19 +510,13 @@ export class TbTagComponent implements OnInit {
    * Be carefull, this method is not recursive (no children parse) !
    */
   assignTagsValues(initialTags: Array<TbTag>, newTags: Array<TbTag>): Array<TbTag> {
-    console.log('---');
-    console.log(initialTags);
-    console.log(newTags);
     const clonedInitialTags = _.clone(initialTags);
     for (const nT of newTags) {
       // let tagToUpdate: TbTag;
       for (let cIT of clonedInitialTags) {
-        if (cIT.id === nT.id) { console.log('!!!!!', _.clone(cIT), _.clone(nT)); cIT.name = nT.name; cIT.path = nT.path; console.log('!!! NEW CIT:', _.clone(cIT)); }
+        if (cIT.id === nT.id) { cIT.name = nT.name; cIT.path = nT.path; }
       }
-      // if (tagToUpdate) { tagToUpdate = nT; }
     }
-    console.log('000');
-    console.log(_.clone(clonedInitialTags));
     return clonedInitialTags;
   }
 
@@ -868,8 +536,6 @@ export class TbTagComponent implements OnInit {
    * @param parent is an object provided by angular-tree module
    */
   renameNodePaths(node: TbTag, parent: any): void {
-    console.log(`RENAME PATH FOR : ${node.name} (${node.path})`);
-    console.log(parent);
     // parent can be a virtual node when moving a node at root
     if (parent.virtual) {
       if (node.path !== '/') {
@@ -898,10 +564,6 @@ export class TbTagComponent implements OnInit {
         }
       }
     }
-  }
-
-  renamechildPath(node: TbTag) {
-    //
   }
 
   startDeletingTag(node: TbTag) {
@@ -938,7 +600,6 @@ export class TbTagComponent implements OnInit {
     this.apiDeletingTag = true;
     this.tagService.deleteTag(tag).subscribe(
       result => {
-        console.log(result);
         this.removeTagById(clonedUserTags, clonedTagToDelete.id);
         this.userTagsObservable.next(clonedUserTags);
         this.apiDeletingTag = false;
@@ -953,28 +614,3 @@ export class TbTagComponent implements OnInit {
   }
 
 }
-
-
-/*
-export interface NgTreeNode {
-  id: number;
-  userId: number;
-  name: string;
-  path: string;
-  type: any;
-  children: NgTreeNode[];
-  selected: boolean;
-}
-
-export class TreeFlatNode {
-  constructor(
-    public id: string,
-    public expandable: boolean,
-    public name: string,
-    public path: string,
-    public level: number,
-    public type: any,
-    public selected: boolean,
-  ) {}
-}
-*/

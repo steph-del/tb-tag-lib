@@ -146,19 +146,13 @@ export class TbTagService {
     // 1...x depth
     for (let index = 1; index < Object.keys(tagsGroupedByLength).length; index++) {
       for (const tag of tagsGroupedByLength[index]) {
-        // console.log('___', tag, index, tagsGroupedByLength);
         const arrayPaths = tag.path.split('/').filter(p => p !== '');
         let parentTag;
         try {
           parentTag = _.find(tagsGroupedByLength[index - 1], t => this.removeAccentAndUpperCase(t.name) === arrayPaths[index - 1]);
           !parentTag.children || parentTag.children.length === 0 ? parentTag.children = [tag] : parentTag.children.push(tag);
         } catch (e) {
-          console.log('!!!!!!!!!!!!!!!!');
-          console.log('arrayPaths: ', arrayPaths);
-          console.log('tag: ', tag);
-          console.log('index: ', index);
-          console.log('tagsGroupedByLength: ', tagsGroupedByLength);
-          console.log('parent tag: ', parentTag);
+          console.log(e);
         }
       }
     }

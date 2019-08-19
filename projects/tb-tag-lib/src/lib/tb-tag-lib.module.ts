@@ -11,7 +11,6 @@ import { TbTagTreeComponent } from './tree/tb-tag-tree.component';
 import { TbTagComponent } from './tag/tb-tag.component';
 import { TreeModule } from 'angular-tree-component';
 
-import { TreeService } from './_services/tb-tree.service';
 import { UnslashPipe } from './_pipes/unslash.pipe';
 
 @NgModule({
@@ -30,7 +29,5 @@ import { UnslashPipe } from './_pipes/unslash.pipe';
   exports: [TbTagTreeComponent, TbTagComponent]
 })
 export class TbTagLibModule {
-  providers: [
-    TreeService
-  ];
+  providers: [];
 }
