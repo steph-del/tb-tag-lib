@@ -145,6 +145,9 @@ export class TbTagComponent implements OnInit {
           // this.rebuildTreeForData(this.tagService.buildTree(newUserTags));
           this.userTags = newUserTags;
           this.tree = this.tagService.buildTree(newUserTags);
+        } else {
+          this.userTags = [];
+          this.tree = [];
         }
       }, error => {
         //
