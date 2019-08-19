@@ -22,9 +22,8 @@
         </mat-chip>
       </mat-chip-list>
     </div>
+    <hr />
   </div>
-
-  <hr />
 
   <!-- user's tags chips -->
   <div class="tag-container">
@@ -40,6 +39,17 @@
                   <mat-spinner class="tagSpinner" diameter="16" color="accent" *ngIf="uTag.unlinking"></mat-spinner>
         </mat-chip>
       </mat-chip-list>
+  </div>
+  <div>
+    <div *ngIf="!userTags || userTags.length === 0" class="no-tags">
+      <p>Vous n'avez aucun tag personnalisé pour l'instant.</p>
+      <p *ngIf="basicTagsByCategory.length > 0">
+        Sélectionnez un tag ci-dessus pour l'ajouter à vos tags<br /> ou créez un nouveau tag en cliquant sur le bouton ci-dessous.
+      </p>
+      <p *ngIf="basicTagsByCategory.length === 0">
+          Vous pouvez créez un nouveau tag en cliquant sur le bouton ci-dessous.
+        </p>
+    </div>
   </div>
 
   <!-- delete tag -->

@@ -163,12 +163,14 @@ export class TbTagComponent implements OnInit {
       })
     ).subscribe(
       oTags => {
-        _oTags = _.map(oTags, o => o[`${this.objectName}Tag`]);
+        _oTags = oTags && oTags.length > 0 ? _.map(oTags, o => o[`${this.objectName}Tag`]) : [];
         for (const uT of _uTags) {
           if (_.find(_oTags, oT => oT.id === uT.id)) { uT.selected = true; }
         }
-        this.tree = this.tagService.buildTree(_uTags);
-        this.userTagsObservable.next(_uTags);
+        if (_oTags.length > 0) {
+          this.tree = this.tagService.buildTree(_uTags);
+          this.userTagsObservable.next(_uTags);
+        }
         this.isLoadingUsersTags = false;
       },
       error => {
