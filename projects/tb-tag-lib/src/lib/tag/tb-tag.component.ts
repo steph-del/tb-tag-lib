@@ -33,7 +33,7 @@ export class TbTagComponent implements OnInit {
   @Input() set objectId(data: number) {
     this._objectId = data;
   }
-  @Input() baseApiUrl = 'http://localhost:8001';
+  @Input() baseApiUrl = 'http://localhost:8000';
   // ??? Input() noApiCall = false;
   @Input() objectName = 'photo';
   @Input() objectEndpoint = '/api/photos';
@@ -76,7 +76,7 @@ export class TbTagComponent implements OnInit {
   editTagInput: FormControl;
 
   // tree
-  zipTagPathRename: Array<Observable<any>> = [];
+  stackObservables: Array<Observable<any>> = [];
   state: ITreeState = {
     expandedNodeIds: {},
     hiddenNodeIds: {},
@@ -333,13 +333,15 @@ export class TbTagComponent implements OnInit {
 
   /**
    * When user validate a new name (click on the 'Validate' button)
+   * 1st update tag name
+   * 2ng update child paths
    * @param node from the tree
    * @param newValue from the input
-   * @TODO rename children paths !!
    */
   renameTag(node: TbTag, newValue: string): void {
     this.stopEditingTagName(node);
-    // @Todo check name size (must not exceed 30 characters)
+    // @Todo check name size (must not exceed 30 characters) AND alos for children !!!!!
+
     const oldValue = _.clone(node.name);
 
     const clonedUserTags = this.cloneTags(this.userTagsObservable.getValue());
@@ -347,19 +349,45 @@ export class TbTagComponent implements OnInit {
 
     node.name = newValue;
     node.isSavingName = true;
-    this.tagService.updateTagName(node).subscribe(
-      result => {
-        clonedUTag.name = newValue;
-        this.userTagsObservable.next(clonedUserTags);
-        node.isSavingName = false;
-      }, error => {
-        // @Todo manage error
-        console.log(error);
-        node.name = oldValue;
-        node.isSavingName = false;
-      }
-    );
 
+    this.stackObservables = [];
+
+    this.stackObservables.push(this.tagService.updateTagName(node));
+
+    this.parseChildNodesAndRenamePath(node, `/${oldValue}/`, `/${newValue}/`); // REPLACE /OLDVALUE/ BY /NEWVALUE/ (slashes to avoid path name 'side effect')
+
+    if (this.stackObservables.length > 0) {
+      const zipCall = zip(...this.stackObservables).subscribe(
+        results => {
+          // OK
+          const updatedTags = this.assignTagsValues(this.userTags, results);
+          this.stackObservables = [];
+          // this.userTagsObservable.next(updatedTags);
+          // No need to rebuild tree, just update tags chips data
+          this.userTags = updatedTags;
+          node.isSavingName = false;
+        }, error => {
+          // @Todo manage error
+          this.stackObservables = [];
+          node.isSavingName = false;
+        }
+      );
+    }
+  }
+
+  parseChildNodesAndRenamePath(node: TbTag, oldValue: string, newValue: string): void {
+    if (node.children && node.children.length > 0) {
+      for (const nodeChild of node.children) {
+        const newPath = nodeChild.path.replace(oldValue, newValue);
+        // @Todo check path size : must not exceed 255 characters
+        nodeChild.path = newPath;
+        // push observable on the stack
+        this.stackObservables.push(this.tagService.updateTagPath(nodeChild));
+        if (nodeChild.children && nodeChild.children.length > 0) {
+          this.parseChildNodesAndRenamePath(nodeChild, oldValue, newValue);
+        }
+      }
+    }
   }
 
   /**
@@ -778,22 +806,20 @@ export class TbTagComponent implements OnInit {
       if (this.userTagsAtDragStart) { this.userTagsObservable.next(this.userTagsAtDragStart); }
       this.userTagsAtDragStart = null;
     } else {
-      console.log(this.zipTagPathRename);
-      if (this.zipTagPathRename.length > 0) {
+      console.log(this.stackObservables);
+      if (this.stackObservables.length > 0) {
         this.apiRenamingTagPath = true;
-        const zipCall = zip(...this.zipTagPathRename).subscribe(
+        const zipCall = zip(...this.stackObservables).subscribe(
           results => {
             const updatedTags = this.assignTagsValues(uTags, results);
-            console.log('updatedTags');
-            console.log(updatedTags);
-            this.zipTagPathRename = [];
+            this.stackObservables = [];
             // this.userTagsObservable.next(updatedTags);
             // No need to rebuild tree, just update tags chips data
             this.userTags = updatedTags;
             this.userTagsAtDragStart = null;
             this.apiRenamingTagPath = false;
           }, error => {
-            this.zipTagPathRename = [];
+            this.stackObservables = [];
             console.log(error);
             this.userTagsObservable.next(this.userTagsAtDragStart);
             // @Todo notify user & reload entire tree
@@ -836,8 +862,8 @@ export class TbTagComponent implements OnInit {
 
   /**
    * Recursively rename tag path
-   * and push API calls to `this.zipTagPathRename` stack
-   * Be carefull, you have to manually subscribe to `this.zipTagPathRename` observables and also clean up the array we finished
+   * and push API calls to `this.stackObservables` stack
+   * Be carefull, you have to manually subscribe to `this.stackObservables` observables and also clean up the array we finished
    * @param node is a TbTag
    * @param parent is an object provided by angular-tree module
    */
@@ -849,7 +875,7 @@ export class TbTagComponent implements OnInit {
       if (node.path !== '/') {
         node.path = '/';
         // push observable on the stack
-        this.zipTagPathRename.push(this.tagService.updateTagPath(node));
+        this.stackObservables.push(this.tagService.updateTagPath(node));
       }
 
       if (node.children && node.children.length > 0) {
@@ -863,7 +889,7 @@ export class TbTagComponent implements OnInit {
       if (newPath !== node.path) {
         node.path = newPath;
         // push observable on the stack
-        this.zipTagPathRename.push(this.tagService.updateTagPath(node));
+        this.stackObservables.push(this.tagService.updateTagPath(node));
       }
 
       if (node.children && node.children.length > 0) {
@@ -872,6 +898,10 @@ export class TbTagComponent implements OnInit {
         }
       }
     }
+  }
+
+  renamechildPath(node: TbTag) {
+    //
   }
 
   startDeletingTag(node: TbTag) {
