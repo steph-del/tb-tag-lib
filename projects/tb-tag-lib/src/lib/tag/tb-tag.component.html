@@ -87,8 +87,8 @@
         </div>
       </mat-card-content>
       <mat-card-actions>
-        <button mat-button [disabled]="apiLoadingRelatedObects || apiDeletingTag" (click)="deleteTag(tagToBeDeleted)">Valider la suppression</button>
-        <button mat-button [disabled]="apiDeletingTag" (click)="stopDeletingTag()">Annuler</button>
+        <button type="button" mat-button [disabled]="apiLoadingRelatedObects || apiDeletingTag" (click)="$event.preventDefault(); deleteTag(tagToBeDeleted)">Valider la suppression</button>
+        <button type="button" mat-button [disabled]="apiDeletingTag" (click)="$event.preventDefault(); stopDeletingTag()">Annuler</button>
       </mat-card-actions>
     </mat-card>      
   </div>
@@ -107,11 +107,11 @@
       <ng-template #treeNodeWrapperTemplate let-node let-index="index">
         <div class="node-wrapper" [style.padding-left]="node.getNodePadding()">
           <!--<tree-node-expander [node]="node">-></tree-node-expander>-->
-          <div class="my-node-expander" (click)="expandNode(node)">
+          <div class="my-node-expander" (click)="$event.preventDefault(); expandNode(node)">
             <!-- use a disabled button to provide padding for tree leaf -->
-            <button mat-icon-button disabled *ngIf="node.isLeaf"></button>
-            <button mat-icon-button *ngIf="!node.isLeaf && !node.isExpanded"><mat-icon>chevron_right</mat-icon></button>
-            <button mat-icon-button *ngIf="!node.isLeaf && node.isExpanded"><mat-icon>expand_more</mat-icon></button>
+            <button type="button" mat-icon-button disabled *ngIf="node.isLeaf"></button>
+            <button type="button" mat-icon-button *ngIf="!node.isLeaf && !node.isExpanded"><mat-icon>chevron_right</mat-icon></button>
+            <button type="button" mat-icon-button *ngIf="!node.isLeaf && node.isExpanded"><mat-icon>expand_more</mat-icon></button>
           </div>
           <div class="node-content-wrapper"
             [class.node-content-wrapper-active]="node.isActive"
@@ -143,17 +143,17 @@
                     <mat-hint align="end">{{newTagName.value?.length || 0}}/30</mat-hint>
                     <mat-error *ngIf="editTagInput.hasError('containsSlash')">Le caractère '/' est interdit</mat-error>
                   </mat-form-field>
-                  <button mat-button (click)="renameTag(node.data, newTagName.value)" [disabled]="!editTagInput.valid">Valider</button>
-                  <button mat-button (click)="stopEditingTagName(node.data)">Annuler</button>
+                  <button type="button" mat-button (click)="$event.preventDefault(); renameTag(node.data, newTagName.value)" [disabled]="!editTagInput.valid">Valider</button>
+                  <button type="button" mat-button (click)="$event.preventDefault(); stopEditingTagName(node.data)">Annuler</button>
                 </div>
                 <div class="actions">
                   <div class="vertical-separator"></div>
-                  <div><button mat-icon-button (click)="editTagName(node.data)" matTooltip="Modifier ce tag"><mat-icon>edit</mat-icon></button></div>
+                  <div><button type="button" mat-icon-button (click)="$event.preventDefault(); editTagName(node.data)" matTooltip="Modifier ce tag"><mat-icon>edit</mat-icon></button></div>
                   <div>
-                    <button mat-icon-button *ngIf="!node.isLeaf" disabled matTooltip="Vous ne pouvez pas supprimer un tag en contenant d'autres">
+                    <button type="button" mat-icon-button *ngIf="!node.isLeaf" disabled matTooltip="Vous ne pouvez pas supprimer un tag en contenant d'autres">
                       <mat-icon>delete_outline</mat-icon>
                     </button>
-                    <button mat-icon-button *ngIf="node.isLeaf" (click)="startDeletingTag(node.data)" matTooltip="Supprimer ce tag">
+                    <button type="button" mat-icon-button *ngIf="node.isLeaf" (click)="$event.preventDefault(); startDeletingTag(node.data)" matTooltip="Supprimer ce tag">
                       <mat-icon>delete</mat-icon>
                     </button>
                   </div>
@@ -172,7 +172,7 @@
         <span>Enregistrement en cours...</span>
     </div>
 
-    <button mat-button *ngIf="!isCreatingNewTag && !apiCreatingNewTag" (click)="isCreatingNewTag = true">
+    <button type="button" mat-button *ngIf="!isCreatingNewTag && !apiCreatingNewTag" (click)="isCreatingNewTag = true">
       <mat-icon style="margin-right: 10px;">add</mat-icon>Créer un nouveau tag
     </button>
 
@@ -182,8 +182,8 @@
         <mat-hint align="end">{{createTagValue.value?.length || 0}}/30</mat-hint>
         <mat-error *ngIf="newTagInput.hasError('containsSlash')">Le caractère '/' est interdit</mat-error>
       </mat-form-field>
-      <button mat-button (click)="createNewTag(createTagValue.value)" [disabled]="!newTagInput.valid">Valider</button>
-      <button mat-button (click)="isCreatingNewTag = false">Annuler</button>
+      <button type="button" mat-button (click)="createNewTag(createTagValue.value)" [disabled]="!newTagInput.valid">Valider</button>
+      <button type="button" mat-button (click)="isCreatingNewTag = false">Annuler</button>
     </div>
 
   </div>
