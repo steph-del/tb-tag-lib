@@ -18,6 +18,12 @@
   .tree-wrapper tree-root tree-viewport {
     overflow: unset;
   }
+
+  // Sometimes, the 'loading...' indicator from angular-tree freeze while moving nodes, don't know the origin of this comportement
+  // Just hide it
+  tree-loading-component {
+    display: none;
+  }
 }
 
 .tag-container {
