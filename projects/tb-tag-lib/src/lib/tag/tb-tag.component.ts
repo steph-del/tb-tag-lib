@@ -155,6 +155,7 @@ export class TbTagComponent implements OnInit {
     // Start by getting both user tags and related object tags
     let _uTags: Array<TbTag>; // user tags
     let _oTags: any;          // object related tags
+    this.isLoadingUsersTags = true;
     this.tagService.getUserTags(this.userId).pipe(
       flatMap(uTags => {
         _uTags = uTags;
@@ -168,8 +169,13 @@ export class TbTagComponent implements OnInit {
         }
         this.tree = this.tagService.buildTree(_uTags);
         this.userTagsObservable.next(_uTags);
+        this.isLoadingUsersTags = false;
       },
-      error => console.log(error)
+      error => {
+        // @Todo manage error
+        console.log(error);
+        this.isLoadingUsersTags = false;
+      }
     );
   }
 

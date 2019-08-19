@@ -1,173 +1,180 @@
-<!-- basic tags chips -->
-<div class="tag-container">
-  <p *ngIf="basicTagsByCategory.length > 0" class="category-title">Tags suggérés</p>
-  <div *ngFor="let cat of basicTagsByCategory" class="basicTagsByCategories">
-    <div class="category">{{ cat[0].category | unslash }}</div>
-    <mat-chip-list>
-      <mat-chip
-        *ngFor= "let bTag of cat"
-        color="none"
-        selected="true"
-        disabled="false"
-        (click)="addBasicTagToUserTags(bTag)">
-        {{ bTag.name }}
-        <mat-spinner class="tagSpinner" diameter="16" *ngIf="bTag.loading"></mat-spinner>
-      </mat-chip>
-    </mat-chip-list>
+<div *ngIf="isLoadingUsersTags">
+  <div class="loading-user-tags">
+    <mat-spinner diameter="16"></mat-spinner>
+    <span>Chargement de vos tags...</span>
   </div>
 </div>
+<div *ngIf="!isLoadingUsersTags">
+  <!-- basic tags chips -->
+  <div class="tag-container">
+    <p *ngIf="basicTagsByCategory.length > 0" class="category-title">Tags suggérés</p>
+    <div *ngFor="let cat of basicTagsByCategory" class="basicTagsByCategories">
+      <div class="category">{{ cat[0].category | unslash }}</div>
+      <mat-chip-list>
+        <mat-chip
+          *ngFor= "let bTag of cat"
+          color="none"
+          selected="true"
+          disabled="false"
+          (click)="addBasicTagToUserTags(bTag)">
+          {{ bTag.name }}
+          <mat-spinner class="tagSpinner" diameter="16" *ngIf="bTag.loading"></mat-spinner>
+        </mat-chip>
+      </mat-chip-list>
+    </div>
+  </div>
 
-<hr />
+  <hr />
 
-<!-- user's tags chips -->
-<div class="tag-container">
-  <div class="category-title">Mes tags</div>
-  <div class="userTags">
-    <mat-chip-list class="chip-list">
-      <mat-chip *ngFor="let uTag of userTags"
-                [color]="getTagColor(uTag)"
-                selected="true"
-                (click)="uTagSelectionChange(uTag)">
-                {{ uTag.name }}
-                <mat-spinner class="tagSpinner" diameter="16" *ngIf="uTag.linking"></mat-spinner>
-                <mat-spinner class="tagSpinner" diameter="16" color="accent" *ngIf="uTag.unlinking"></mat-spinner>
-      </mat-chip>
-    </mat-chip-list>
-</div>
+  <!-- user's tags chips -->
+  <div class="tag-container">
+    <div class="category-title">Mes tags</div>
+    <div class="userTags">
+      <mat-chip-list class="chip-list">
+        <mat-chip *ngFor="let uTag of userTags"
+                  [color]="getTagColor(uTag)"
+                  selected="true"
+                  (click)="uTagSelectionChange(uTag)">
+                  {{ uTag.name }}
+                  <mat-spinner class="tagSpinner" diameter="16" *ngIf="uTag.linking"></mat-spinner>
+                  <mat-spinner class="tagSpinner" diameter="16" color="accent" *ngIf="uTag.unlinking"></mat-spinner>
+        </mat-chip>
+      </mat-chip-list>
+  </div>
 
-<!-- delete tag -->
-<div *ngIf="isDeletingTag && tagToBeDeleted !== null" class="delete-tag-wrapper">
-  <mat-card class="delete-card">
-    <mat-card-header>
-      <mat-card-title>Suppression du tag "{{ tagToBeDeleted.name }}"</mat-card-title>
-    </mat-card-header>
-    <mat-card-content>
-      <div *ngIf="apiLoadingRelatedObects">
-        <div class="tag-deletion-loading-operation">
-          <mat-spinner diameter="16"></mat-spinner>
-          <span>Nous recherchons les informations à propos de ce tag...</span>
-        </div>
-      </div>
-      <div *ngIf="apiDeletingTag">
-        <div class="tag-deletion-loading-operation">
-          <mat-spinner diameter="16"></mat-spinner>
-          <span>Suppression du tag en cours...</span>
-        </div>
-      </div>
-      <div *ngIf="!apiLoadingRelatedObects && !apiDeletingTag">
-        <div *ngIf="tagToBeDeletedRelatedObjects.length === 0">
-          <p>Ce tag n'est liée à aucun(e) {{ objectName }}.</p>
-          <p>Sa suppression n'entrainera pas de conséquences sur le reste de vos données.</p>
-        </div>
-        <div *ngIf="tagToBeDeletedRelatedObjects.length === 1">
-          <p>Ce tag est lié à un ou une {{ objectName }}.</p>
-          <p>Si vous le supprimez, vous supprimez en même temps le lien vers ce ou cette {{ objectName }}.</p>
-        </div>
-        <div *ngIf="tagToBeDeletedRelatedObjects.length > 1">
-          <p>Ce tag est lié à <b>{{ tagToBeDeletedRelatedObjects.length }} {{ objectName }}s</b>.</p>
-          <p>Si vous le supprimez, vous supprimez en même temps les liens vers ces {{ tagToBeDeletedRelatedObjects.length }} {{ objectName }}s.</p>
-        </div>
-      </div>
-    </mat-card-content>
-    <mat-card-actions>
-      <button mat-button [disabled]="apiLoadingRelatedObects || apiDeletingTag" (click)="deleteTag(tagToBeDeleted)">Valider la suppression</button>
-      <button mat-button [disabled]="apiDeletingTag" (click)="stopDeletingTag()">Annuler</button>
-    </mat-card-actions>
-  </mat-card>      
-</div>
-
-<!-- tree -->
-<div class="tree-wrapper">
-  <tree-root
-    #treeComponent
-    [state]="state"
-    [options]="options"
-    [focused]="true"
-    [nodes]="tree"
-    (dragstart)="dragStart()"
-    (moveNode)="moveNode($event)">
-
-    <ng-template #treeNodeWrapperTemplate let-node let-index="index">
-      <div class="node-wrapper" [style.padding-left]="node.getNodePadding()">
-        <!--<tree-node-expander [node]="node">-></tree-node-expander>-->
-        <div class="my-node-expander" (click)="expandNode(node)">
-          <!-- use a disabled button to provide padding for tree leaf -->
-          <button mat-icon-button disabled *ngIf="node.isLeaf"></button>
-          <button mat-icon-button *ngIf="!node.isLeaf && !node.isExpanded"><mat-icon>chevron_right</mat-icon></button>
-          <button mat-icon-button *ngIf="!node.isLeaf && node.isExpanded"><mat-icon>expand_more</mat-icon></button>
-        </div>
-        <div class="node-content-wrapper"
-          [class.node-content-wrapper-active]="node.isActive"
-          [class.node-content-wrapper-focused]="node.isFocused"
-          (click)="node.mouseAction('click', $event)"
-          (dblclick)="node.mouseAction('dblClick', $event)"
-          (contextmenu)="node.mouseAction('contextMenu', $event)"
-          (treeDrop)="node.onDrop($event)"
-          [treeAllowDrop]="node.allowDrop"
-          [treeDrag]="node"
-          [treeDragEnabled]="node.allowDrag()">
-  
-          <!--<tree-node-content [node]="node" [index]="index"></tree-node-content>-->
-          <div class="tree-row">
-              <mat-checkbox
-                *ngIf="!node.data.linking && !node.data.unlinking && !node.data.isEditingName && !node.data.isSavingName"
-                color="primary"
-                [checked]="node.data.selected"
-                (change)="uTagSelectionChange(node.data)">
-                {{ node.data.name }}
-              </mat-checkbox>
-              <div *ngIf="node.data.linking || node.data.unlinking || node.data.isSavingName" class="tree-node-crud-operation">
-                  <mat-spinner diameter="16"></mat-spinner>
-                  <span>Enregistrement en cours...</span>
-              </div>
-              <div *ngIf="node.data.isEditingName" class="tree-node-editing-name">
-                <mat-form-field>
-                  <input matInput #newTagName [formControl]="editTagInput" value="{{node.data.name}}" placeholder="Renommer le tag" maxlength="30">
-                  <mat-hint align="end">{{newTagName.value?.length || 0}}/30</mat-hint>
-                  <mat-error *ngIf="editTagInput.hasError('containsSlash')">Le caractère '/' est interdit</mat-error>
-                </mat-form-field>
-                <button mat-button (click)="renameTag(node.data, newTagName.value)" [disabled]="!editTagInput.valid">Valider</button>
-                <button mat-button (click)="stopEditingTagName(node.data)">Annuler</button>
-              </div>
-              <div class="actions">
-                <div class="vertical-separator"></div>
-                <div><button mat-icon-button (click)="editTagName(node.data)" matTooltip="Modifier ce tag"><mat-icon>edit</mat-icon></button></div>
-                <div>
-                  <button mat-icon-button *ngIf="!node.isLeaf" disabled matTooltip="Vous ne pouvez pas supprimer un tag en contenant d'autres">
-                    <mat-icon>delete_outline</mat-icon>
-                  </button>
-                  <button mat-icon-button *ngIf="node.isLeaf" (click)="startDeletingTag(node.data)" matTooltip="Supprimer ce tag">
-                    <mat-icon>delete</mat-icon>
-                  </button>
-                </div>
-              </div>
+  <!-- delete tag -->
+  <div *ngIf="isDeletingTag && tagToBeDeleted !== null" class="delete-tag-wrapper">
+    <mat-card class="delete-card">
+      <mat-card-header>
+        <mat-card-title>Suppression du tag "{{ tagToBeDeleted.name }}"</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <div *ngIf="apiLoadingRelatedObects">
+          <div class="tag-deletion-loading-operation">
+            <mat-spinner diameter="16"></mat-spinner>
+            <span>Nous recherchons les informations à propos de ce tag...</span>
           </div>
-
-
         </div>
-      </div>
-    </ng-template>
-
-  </tree-root>
-
-  <div *ngIf="apiRenamingTagPath || apiCreatingNewTag" class="api-crud-operation">
-      <mat-spinner diameter="16"></mat-spinner>
-      <span>Enregistrement en cours...</span>
+        <div *ngIf="apiDeletingTag">
+          <div class="tag-deletion-loading-operation">
+            <mat-spinner diameter="16"></mat-spinner>
+            <span>Suppression du tag en cours...</span>
+          </div>
+        </div>
+        <div *ngIf="!apiLoadingRelatedObects && !apiDeletingTag">
+          <div *ngIf="tagToBeDeletedRelatedObjects.length === 0">
+            <p>Ce tag n'est liée à aucun(e) {{ objectName }}.</p>
+            <p>Sa suppression n'entrainera pas de conséquences sur le reste de vos données.</p>
+          </div>
+          <div *ngIf="tagToBeDeletedRelatedObjects.length === 1">
+            <p>Ce tag est lié à un ou une {{ objectName }}.</p>
+            <p>Si vous le supprimez, vous supprimez en même temps le lien vers ce ou cette {{ objectName }}.</p>
+          </div>
+          <div *ngIf="tagToBeDeletedRelatedObjects.length > 1">
+            <p>Ce tag est lié à <b>{{ tagToBeDeletedRelatedObjects.length }} {{ objectName }}s</b>.</p>
+            <p>Si vous le supprimez, vous supprimez en même temps les liens vers ces {{ tagToBeDeletedRelatedObjects.length }} {{ objectName }}s.</p>
+          </div>
+        </div>
+      </mat-card-content>
+      <mat-card-actions>
+        <button mat-button [disabled]="apiLoadingRelatedObects || apiDeletingTag" (click)="deleteTag(tagToBeDeleted)">Valider la suppression</button>
+        <button mat-button [disabled]="apiDeletingTag" (click)="stopDeletingTag()">Annuler</button>
+      </mat-card-actions>
+    </mat-card>      
   </div>
 
-  <button mat-button *ngIf="!isCreatingNewTag && !apiCreatingNewTag" (click)="isCreatingNewTag = true">
-    <mat-icon style="margin-right: 10px;">add</mat-icon>Créer un nouveau tag
-  </button>
+  <!-- tree -->
+  <div class="tree-wrapper">
+    <tree-root
+      #treeComponent
+      [state]="state"
+      [options]="options"
+      [focused]="true"
+      [nodes]="tree"
+      (dragstart)="dragStart()"
+      (moveNode)="moveNode($event)">
 
-  <div *ngIf="isCreatingNewTag && !apiCreatingNewTag" class="tag-creation">
-    <mat-form-field>
-      <input matInput #createTagValue [formControl]="newTagInput" placeholder="Nom du nouveau tag" maxlength="30">
-      <mat-hint align="end">{{createTagValue.value?.length || 0}}/30</mat-hint>
-      <mat-error *ngIf="newTagInput.hasError('containsSlash')">Le caractère '/' est interdit</mat-error>
-    </mat-form-field>
-    <button mat-button (click)="createNewTag(createTagValue.value)" [disabled]="!newTagInput.valid">Valider</button>
-    <button mat-button (click)="isCreatingNewTag = false">Annuler</button>
+      <ng-template #treeNodeWrapperTemplate let-node let-index="index">
+        <div class="node-wrapper" [style.padding-left]="node.getNodePadding()">
+          <!--<tree-node-expander [node]="node">-></tree-node-expander>-->
+          <div class="my-node-expander" (click)="expandNode(node)">
+            <!-- use a disabled button to provide padding for tree leaf -->
+            <button mat-icon-button disabled *ngIf="node.isLeaf"></button>
+            <button mat-icon-button *ngIf="!node.isLeaf && !node.isExpanded"><mat-icon>chevron_right</mat-icon></button>
+            <button mat-icon-button *ngIf="!node.isLeaf && node.isExpanded"><mat-icon>expand_more</mat-icon></button>
+          </div>
+          <div class="node-content-wrapper"
+            [class.node-content-wrapper-active]="node.isActive"
+            [class.node-content-wrapper-focused]="node.isFocused"
+            (click)="node.mouseAction('click', $event)"
+            (dblclick)="node.mouseAction('dblClick', $event)"
+            (contextmenu)="node.mouseAction('contextMenu', $event)"
+            (treeDrop)="node.onDrop($event)"
+            [treeAllowDrop]="node.allowDrop"
+            [treeDrag]="node"
+            [treeDragEnabled]="node.allowDrag()">
+    
+            <!--<tree-node-content [node]="node" [index]="index"></tree-node-content>-->
+            <div class="tree-row">
+                <mat-checkbox
+                  *ngIf="!node.data.linking && !node.data.unlinking && !node.data.isEditingName && !node.data.isSavingName"
+                  color="primary"
+                  [checked]="node.data.selected"
+                  (change)="uTagSelectionChange(node.data)">
+                  {{ node.data.name }}
+                </mat-checkbox>
+                <div *ngIf="node.data.linking || node.data.unlinking || node.data.isSavingName" class="tree-node-crud-operation">
+                    <mat-spinner diameter="16"></mat-spinner>
+                    <span>Enregistrement en cours...</span>
+                </div>
+                <div *ngIf="node.data.isEditingName" class="tree-node-editing-name">
+                  <mat-form-field>
+                    <input matInput #newTagName [formControl]="editTagInput" value="{{node.data.name}}" placeholder="Renommer le tag" maxlength="30">
+                    <mat-hint align="end">{{newTagName.value?.length || 0}}/30</mat-hint>
+                    <mat-error *ngIf="editTagInput.hasError('containsSlash')">Le caractère '/' est interdit</mat-error>
+                  </mat-form-field>
+                  <button mat-button (click)="renameTag(node.data, newTagName.value)" [disabled]="!editTagInput.valid">Valider</button>
+                  <button mat-button (click)="stopEditingTagName(node.data)">Annuler</button>
+                </div>
+                <div class="actions">
+                  <div class="vertical-separator"></div>
+                  <div><button mat-icon-button (click)="editTagName(node.data)" matTooltip="Modifier ce tag"><mat-icon>edit</mat-icon></button></div>
+                  <div>
+                    <button mat-icon-button *ngIf="!node.isLeaf" disabled matTooltip="Vous ne pouvez pas supprimer un tag en contenant d'autres">
+                      <mat-icon>delete_outline</mat-icon>
+                    </button>
+                    <button mat-icon-button *ngIf="node.isLeaf" (click)="startDeletingTag(node.data)" matTooltip="Supprimer ce tag">
+                      <mat-icon>delete</mat-icon>
+                    </button>
+                  </div>
+                </div>
+            </div>
+
+
+          </div>
+        </div>
+      </ng-template>
+
+    </tree-root>
+
+    <div *ngIf="apiRenamingTagPath || apiCreatingNewTag" class="api-crud-operation">
+        <mat-spinner diameter="16"></mat-spinner>
+        <span>Enregistrement en cours...</span>
+    </div>
+
+    <button mat-button *ngIf="!isCreatingNewTag && !apiCreatingNewTag" (click)="isCreatingNewTag = true">
+      <mat-icon style="margin-right: 10px;">add</mat-icon>Créer un nouveau tag
+    </button>
+
+    <div *ngIf="isCreatingNewTag && !apiCreatingNewTag" class="tag-creation">
+      <mat-form-field>
+        <input matInput #createTagValue [formControl]="newTagInput" placeholder="Nom du nouveau tag" maxlength="30">
+        <mat-hint align="end">{{createTagValue.value?.length || 0}}/30</mat-hint>
+        <mat-error *ngIf="newTagInput.hasError('containsSlash')">Le caractère '/' est interdit</mat-error>
+      </mat-form-field>
+      <button mat-button (click)="createNewTag(createTagValue.value)" [disabled]="!newTagInput.valid">Valider</button>
+      <button mat-button (click)="isCreatingNewTag = false">Annuler</button>
+    </div>
+
   </div>
-
 </div>
-
