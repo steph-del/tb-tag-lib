@@ -38,7 +38,7 @@
       color: grey;
       font-variant: small-caps;
       margin-right: 15px;
-      border-right: 1px solid gray;
+      border-right: 1px solid lightgrey;
       padding-right: 15px;
       padding-top: 5px;
       padding-bottom: 5px;
@@ -129,6 +129,9 @@ hr {
   
   .api-crud-operation {
     @include spinner-div();
+    justify-content: center;
+    margin-top: 10px;
+    margin-bottom: 10px;
   }
 
   .tag-creation {
