@@ -1,6 +1,6 @@
 // TODO PREVENT SENDING FORM FOR ALL BUTTONS
 
-import { Component, OnInit, Input, Output, EventEmitter, OnChanges, SimpleChanges, ViewChild } from '@angular/core';
+import { Component, OnInit, Input, Output, EventEmitter, ViewChild } from '@angular/core';
 import { FormBuilder, FormControl } from '@angular/forms';
 
 import { Observable, BehaviorSubject, VirtualAction, zip } from 'rxjs';
@@ -10,13 +10,31 @@ import { TbTag } from '../_models/tbtag.model';
 import { TbTagService } from '../_services/tb-tag-lib.service';
 
 import * as _ from 'lodash';
-import { FlatTreeControl } from '@angular/cdk/tree';
-import { MatTreeFlattener, MatTreeFlatDataSource } from '@angular/material/tree';
-import { flatMap, map } from 'rxjs/operators';
+import { flatMap } from 'rxjs/operators';
 
-import { ITreeState, ITreeOptions, TreeComponent, TreeNode, TreeModel, TREE_ACTIONS } from 'angular-tree-component';
+import { ITreeState, ITreeOptions, TreeComponent, TreeNode, TreeModel } from 'angular-tree-component';
 import { MatSnackBar } from '@angular/material/snack-bar';
 
+
+/*
+ * OVERALL PURPOSE
+ *
+ *  - A `basicTag` is a tag provided through the `basicTags` @Input. It's not persisted in DB.
+ *    - structure : `{ category: string , name: string, id: null, userId: null }`
+ *    - to be used, basic tags are grouped by categories
+ *
+ *  - An `userTag` is a tag persisted in DB
+ *    - structure: see `TbTag` model
+ *
+ *  - A `basicTag`can be added to the users tags list (and so persisted in DB)
+ *
+ *  - To keep data synchronized between DB, chips and the tree, we mimic an immutable approach through the `userTagsObservable` variable
+ *    - Most of times, changes are not affecting `userTags` or `tree` variables but cloned ones and then, we emit an `userTagsObservable` event
+ *    - Please note that for some ease (ie. avoid rebuilding tree too much often), we sometime go beyond this approach
+ *
+ *  - When several API calls are needed (moving or renaming a tag with children), we use RxJS `zip` functionality to simplify
+ *    obserable management and to avoid death loops
+ */
 
 @Component({
   selector: 'tb-tag',
@@ -30,7 +48,6 @@ export class TbTagComponent implements OnInit {
   // INPUT / OUTPUT
   //
   @Input() userId: number;
-  // @Input() objectId: number;
   @Input() set objectId(data: number) {
     this._objectId = data;
   }
@@ -44,7 +61,6 @@ export class TbTagComponent implements OnInit {
   @Input() apiRetrievePath = '/api/photos/{id}/photo_tag_relations';
   @Input() apiTagsRelationsPath = '/api/photo_tags/{id}/photo_relations';
   @Input() set basicTags(data: Array<TbTag>) {
-    // this.basicTagsSet = true;
     data.map(bTag => bTag.path = '/');
     this._basicTags = data;
     this.tagService.setBasicTags(data);
@@ -115,6 +131,15 @@ export class TbTagComponent implements OnInit {
     return control.value.indexOf('/') === -1 ? null : { containsSlash: true };
   }
 
+  /**
+   * At startup :
+   *  - Check if an objectId is provided
+   *  - Set up API paths to the tag service
+   *  - Set up form input
+   *  - Get basic tags by categories
+   *  - Subscribe to user's tag change
+   *  - Get BOTH user's tags and related objects
+   */
   ngOnInit() {
     // objectId provided ?
     if (!this._objectId/* && !this.noApiCall*/) {
@@ -132,17 +157,18 @@ export class TbTagComponent implements OnInit {
     this.tagService.setTagEndpoint(this.tagEndpoint);
     this.tagService.setUserId(Number(this.userId));
 
-    // this.treeDataSource = new MatTreeFlatDataSource(this.treeControl, this.treeFlattener);
+    // Form input
+    this.newTagInput = new FormControl('', [TbTagComponent.noSlash]);
+    this.editTagInput = new FormControl('', [TbTagComponent.noSlash]);
 
-    // basic tags
+    // Basic tags by categories loading
     this.tagService.getBasicTagsByCategory().subscribe(_tags => this.basicTagsByCategory = _tags);
 
     // User tags subscriber
     this.userTagsObservable.subscribe(
       newUserTags => {
-        // update tree
+        // update tags & tree
         if (newUserTags.length > 0) {
-          // this.rebuildTreeForData(this.tagService.buildTree(newUserTags));
           this.userTags = newUserTags;
           this.tree = this.tagService.buildTree(newUserTags);
         } else {
@@ -153,10 +179,6 @@ export class TbTagComponent implements OnInit {
         //
       }
     );
-
-    // Form input
-    this.newTagInput = new FormControl('', [TbTagComponent.noSlash]);
-    this.editTagInput = new FormControl('', [TbTagComponent.noSlash]);
 
     // Start by getting both user tags and related object tags
     let _uTags: Array<TbTag>; // user tags
@@ -186,19 +208,27 @@ export class TbTagComponent implements OnInit {
     );
   }
 
-  // ********
-  // TAG CRUD
-  // ********
-  getUserTags(): void {
+  // ***********
+  // USER'S TAGS
+  // ***********
+
+  /**
+   * Emit event (next) after we get the user's tags
+   */
+  private getUserTags(): void {
     this.tagService.getUserTags(this.userId).subscribe(
       uTags => this.userTagsObservable.next(uTags)
     );
   }
 
+  // **********
+  // BASIC TAGS
+  // **********
+
   /**
    * When user select a basic tag, we create a new tag in db and then do the link
    */
-  addBasicTagToUserTags(bTag: TbTag): void {
+  public addBasicTagToUserTags(bTag: TbTag): void {
     if (this.findTagByNameAndPath(this.userTagsObservable.getValue(), bTag.name, bTag.path) == null) {
       this.isCreatingNewTag = false;
 
@@ -224,7 +254,7 @@ export class TbTagComponent implements OnInit {
     }
   }
 
-  basicTagAlreadyExistsInUserTags(bTag: TbTag): boolean {
+  public basicTagAlreadyExistsInUserTags(bTag: TbTag): boolean {
     const uTags = this.userTagsObservable.getValue();
     if (this.findTagByNameAndPath(uTags, bTag.name, bTag.path)) {
       return true;
@@ -233,11 +263,15 @@ export class TbTagComponent implements OnInit {
     }
   }
 
+  // *************
+  // TAG SELECTION
+  // *************
+
   /**
    * When user click on an user's tag or toggle a checkbox in the tree
    * @param node from the tree
    */
-  uTagSelectionChange(node: TbTag): void {
+  public uTagSelectionChange(node: TbTag): void {
     const clonedUserTags = this.cloneTags(this.userTagsObservable.getValue());
     const clonedUTag = this.findTagById(clonedUserTags, node.id);
 
@@ -277,23 +311,28 @@ export class TbTagComponent implements OnInit {
     }
   }
 
+  // *************
+  // TAG NAME EDIT
+  // *************
+
   /**
    * When user click on the edit button inside the tree
    * Before editing the tag, we toggle `isEditingName` for every user's tag to `false`
    * @param node from the tree
    */
-  editTagName(node: TbTag): void {
+  public editTagName(node: TbTag): void {
     const uTags = this.userTagsObservable.getValue();
     this.stopEditingTagsName(uTags);
     const tagToEdit = this.findTagById(uTags, node.id);
     if (tagToEdit) { tagToEdit.isEditingName = true; }
     this.userTagsObservable.next(uTags);
   }
+
    /**
    * When user click on the cancel edit button inside the tree
    * @param node from the tree
    */
-  stopEditingTagName(node: TbTag): void {
+  public stopEditingTagName(node: TbTag): void {
     node.isEditingName = false;
     const uTags = this.userTagsObservable.getValue();
     const stopEditingTag = this.findTagById(uTags, node.id);
@@ -303,7 +342,7 @@ export class TbTagComponent implements OnInit {
   /**
    * Recursively stop editing tags
    */
-  stopEditingTagsName(tags: Array<TbTag>): void {
+  private stopEditingTagsName(tags: Array<TbTag>): void {
     for (const tag of tags) {
       tag.isEditingName = false;
       if (tag.children && tag.children.length > 0) {
@@ -319,7 +358,7 @@ export class TbTagComponent implements OnInit {
    * @param node from the tree
    * @param newValue from the input
    */
-  renameTag(node: TbTag, newValue: string): void {
+  public renameTag(node: TbTag, newValue: string): void {
     this.stopEditingTagName(node);
 
     const oldValue = _.clone(node.name);
@@ -372,89 +411,15 @@ export class TbTagComponent implements OnInit {
     }
   }
 
-  parseChildNodesAndRenamePath(node: TbTag, oldValue: string, newValue: string): void {
-    if (node.children && node.children.length > 0) {
-      for (const nodeChild of node.children) {
-        const newPath = nodeChild.path.replace(oldValue, newValue);
-        nodeChild.path = newPath;
-        // push observable on the stack
-        this.stackObservables.push(this.tagService.updateTagPath(nodeChild));
-        if (nodeChild.children && nodeChild.children.length > 0) {
-          this.parseChildNodesAndRenamePath(nodeChild, oldValue, newValue);
-        }
-      }
-    }
-  }
-
-  getChildren(tag: TbTag): Array<TbTag> {
-    const children: Array<TbTag> = [];
-    let subChildren: Array<TbTag> = [];
-    if (tag.children && tag.children.length > 0) {
-      for (const child of tag.children) {
-        children.push(child);
-        if (child.children && child.children.length > 0) {
-          subChildren = this.getChildren(child);
-          if (subChildren && subChildren.length > 0) { children.push(...subChildren); }
-        }
-      }
-    }
-    return children;
-  }
-
-  public cloneTags(tags: Array<TbTag>): Array<TbTag> {
-    return _.cloneDeep(tags);
-  }
-
-  /**
-   * Recursively parse an array of tags and get the tag with the given id
-   */
-  public findTagById(tags: Array<TbTag>, id: number): TbTag {
-    let result, subResult;
-    tags.forEach(tag => {
-      if (Number(tag.id) === Number(id)) {
-        result = tag;
-      } else if (tag.children) {
-        subResult = this.findTagById(tag.children, id);
-        if (subResult) { result = subResult; }
-      }
-    });
-    return result;
-  }
-
-  /**
-   * Recursively parse an array of tags and get the tag with the given name/path values
-   */
-  public findTagByNameAndPath(tags: Array<TbTag>, name: string, path: string): TbTag {
-    let result, subResult;
-    tags.forEach(tag => {
-      if (tag.name.toLowerCase() === name.toLocaleLowerCase() && tag.path.toLowerCase() === path.toLowerCase()) {
-        result = tag;
-      } else if (tag.children) {
-        subResult = this.findTagByNameAndPath(tag.children, name, path);
-        if (subResult) { result = subResult; }
-      }
-    });
-    return result;
-  }
-
-  /**
-   * Recursively parse an array of tags and remove the tag with the given id
-   */
-  public removeTagById(tags: Array<TbTag>, id: number): void {
-    tags.forEach(tag => {
-      if (Number(tag.id) === Number(id)) {
-        _.remove(tags, t => t === tag);
-      } else if (tag.children) {
-        this.removeTagById(tag.children, id);
-      }
-    });
-  }
+  // ************
+  // TAG CREATION
+  // ************
 
   /**
    * When user create a new tag
    * @param value entered by the user
    */
-  createNewTag(value: string) {
+  public createNewTag(value: string) {
     if (this.findTagByNameAndPath(this.userTagsObservable.getValue(), value, '/') == null) {
       this.isCreatingNewTag = false;
 
@@ -477,33 +442,15 @@ export class TbTagComponent implements OnInit {
     }
   }
 
-  // ************************
-  // TAGS AND RELATES OBJECTS
-  // ************************
-  getTagColor(tag: TbTag): 'primary' | 'none' {
-    return tag.selected ? 'primary' : 'none';
-  }
-
-  // *****
-  // OTHER
-  // *****
-
-  /**
-   * Bind tag-tree logs
-   */
-  _log(logMessage: TbLog) {
-    this.log.emit(logMessage);
-  }
-
-  // ******************
-  // DRAG & DROP EVENTS
-  // ******************
+  // ***********
+  // DRAG & DROP
+  // ***********
 
   /**
    * At drag start, save current user's tags value
    * This allow to set the tree at its previous state if drop is not possible or if it aborts
    */
-  dragStart(): void {
+  public dragStart(): void {
     this.userTagsAtDragStart = this.userTagsObservable.getValue();
   }
 
@@ -511,7 +458,7 @@ export class TbTagComponent implements OnInit {
    * When user moves a node inside the tree
    * @param event provided by angular-tree
    */
-  moveNode(event: {eventName: string, node: TbTag, to: {index: number, parent: any}, treeModel: TreeModel}) {
+ public  moveNode(event: {eventName: string, node: TbTag, to: {index: number, parent: any}, treeModel: TreeModel}) {
     const uTags = this.userTagsObservable.getValue();
 
     this.renameNodePaths(event.node, event.to.parent);
@@ -552,7 +499,7 @@ export class TbTagComponent implements OnInit {
    * Parse the initialTags array and assign newTags value by their ids
    * Be carefull, this method is not recursive (no children parse) !
    */
-  assignTagsValues(initialTags: Array<TbTag>, newTags: Array<TbTag>): Array<TbTag> {
+  private assignTagsValues(initialTags: Array<TbTag>, newTags: Array<TbTag>): Array<TbTag> {
     const clonedInitialTags = _.clone(initialTags);
     for (const nT of newTags) {
       // let tagToUpdate: TbTag;
@@ -567,7 +514,7 @@ export class TbTagComponent implements OnInit {
    * Expand / collapse a tree node
    * @param node provided by angular-tree
    */
-  expandNode(node: TreeNode): void {
+  public expandNode(node: TreeNode): void {
     if (node.isExpanded) { node.collapse(); } else { node.expand(); }
   }
 
@@ -578,7 +525,7 @@ export class TbTagComponent implements OnInit {
    * @param node is a TbTag
    * @param parent is an object provided by angular-tree module
    */
-  renameNodePaths(node: TbTag, parent: any): void {
+  private renameNodePaths(node: TbTag, parent: any): void {
     // parent can be a virtual node when moving a node at root
     if (parent.virtual) {
       if (node.path !== '/') {
@@ -618,7 +565,18 @@ export class TbTagComponent implements OnInit {
     }
   }
 
-  startDeletingTag(node: TbTag) {
+  // **********
+  // DELETE TAG
+  // **********
+
+  /**
+   * When the user click on delete,
+   * Set flags and get related objects
+   * Then, show a message so the user have to confirm the deletion
+   * if we are not able to get related objects, (request fails), we abort
+   * @param node is an object provided by angular-tree module
+   */
+  public startDeletingTag(node: TbTag) {
     this.isDeletingTag = true;
     this.tagToBeDeleted = node;
     this.apiLoadingRelatedObects = true;
@@ -635,13 +593,22 @@ export class TbTagComponent implements OnInit {
     );
   }
 
-  stopDeletingTag() {
+  /**
+   * When user cancel a tag deletion
+   * or when the deletion is accomplished
+   * or when an error occured,
+   * Set flags
+   */
+  public stopDeletingTag() {
     this.isDeletingTag = false;
     this.tagToBeDeleted = null;
     this.tagToBeDeletedRelatedObjects = [];
   }
 
-  deleteTag(tag: TbTag): void {
+  /**
+   * When user validate a tag deletion
+   */
+  public deleteTag(tag: TbTag): void {
     if (tag.children && tag.children.length > 0) {
       this.notify('Vous ne pouvez pas supprimer un tag en contenant d\'autres');
       return;
@@ -664,8 +631,114 @@ export class TbTagComponent implements OnInit {
     );
   }
 
-  notify(message: string): void {
+  // *******
+  // HELPERS
+  // (parse tags, retrieve tag, etc.)
+  // *******
+
+  /**
+   * Recursively parse node children
+   * Search trough `node.path` value
+   * and replace `/oldValue/` by  `/newValue/`
+   * @param node a `TbTag`object
+   * @param oldValue is the search value (whithout slashes)
+   * @param newValue is the replace value (whithout slashes)
+   */
+  private parseChildNodesAndRenamePath(node: TbTag, oldValue: string, newValue: string): void {
+    if (node.children && node.children.length > 0) {
+      for (const nodeChild of node.children) {
+        const newPath = nodeChild.path.replace(oldValue, newValue);
+        nodeChild.path = newPath;
+        // push observable on the stack
+        this.stackObservables.push(this.tagService.updateTagPath(nodeChild));
+        if (nodeChild.children && nodeChild.children.length > 0) {
+          this.parseChildNodesAndRenamePath(nodeChild, oldValue, newValue);
+        }
+      }
+    }
+  }
+
+  /**
+   * Recursively parse tag children and returns its as a flat array
+   * @param tag a `TbTag`object
+   */
+  private getChildren(tag: TbTag): Array<TbTag> {
+    const children: Array<TbTag> = [];
+    let subChildren: Array<TbTag> = [];
+    if (tag.children && tag.children.length > 0) {
+      for (const child of tag.children) {
+        children.push(child);
+        if (child.children && child.children.length > 0) {
+          subChildren = this.getChildren(child);
+          if (subChildren && subChildren.length > 0) { children.push(...subChildren); }
+        }
+      }
+    }
+    return children;
+  }
+
+  private cloneTags(tags: Array<TbTag>): Array<TbTag> {
+    return _.cloneDeep(tags);
+  }
+
+  /**
+   * Recursively parse an array of tags and get the tag with the given id
+   */
+  private findTagById(tags: Array<TbTag>, id: number): TbTag {
+    let result, subResult;
+    tags.forEach(tag => {
+      if (Number(tag.id) === Number(id)) {
+        result = tag;
+      } else if (tag.children) {
+        subResult = this.findTagById(tag.children, id);
+        if (subResult) { result = subResult; }
+      }
+    });
+    return result;
+  }
+
+  /**
+   * Recursively parse an array of tags and get the tag with the given name/path values
+   */
+  private findTagByNameAndPath(tags: Array<TbTag>, name: string, path: string): TbTag {
+    let result, subResult;
+    tags.forEach(tag => {
+      if (tag.name.toLowerCase() === name.toLocaleLowerCase() && tag.path.toLowerCase() === path.toLowerCase()) {
+        result = tag;
+      } else if (tag.children) {
+        subResult = this.findTagByNameAndPath(tag.children, name, path);
+        if (subResult) { result = subResult; }
+      }
+    });
+    return result;
+  }
+
+  /**
+   * Recursively parse an array of tags and remove the tag with the given id
+   */
+  private removeTagById(tags: Array<TbTag>, id: number): void {
+    tags.forEach(tag => {
+      if (Number(tag.id) === Number(id)) {
+        _.remove(tags, t => t === tag);
+      } else if (tag.children) {
+        this.removeTagById(tag.children, id);
+      }
+    });
+  }
+
+  public getTagColor(tag: TbTag): 'primary' | 'none' {
+    return tag.selected ? 'primary' : 'none';
+  }
+
+  private notify(message: string): void {
     this._snackBar.open(message, null, { duration: 5000 });
+  }
+
+  /**
+   * Bind tag-tree logs
+   */
+  private _log(logMessage: TbLog) {
+    this.log.emit(logMessage);
   }
 
 }
