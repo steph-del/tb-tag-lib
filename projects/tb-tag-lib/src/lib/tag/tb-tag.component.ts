@@ -1,5 +1,3 @@
-// TODO PREVENT SENDING FORM FOR ALL BUTTONS
-
 import { Component, OnInit, Input, Output, EventEmitter, ViewChild } from '@angular/core';
 import { FormBuilder, FormControl } from '@angular/forms';
 
