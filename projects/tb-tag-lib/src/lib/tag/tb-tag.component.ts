@@ -71,6 +71,7 @@ export class TbTagComponent implements OnInit {
   apiCreatingNewTag = false;
   apiLoadingRelatedObects = false;
   apiDeletingTag = false;
+  maxPathSize = 255;
 
   // form
   newTagInput: FormControl;
@@ -317,7 +318,6 @@ export class TbTagComponent implements OnInit {
    */
   renameTag(node: TbTag, newValue: string): void {
     this.stopEditingTagName(node);
-    // @Todo check name size (must not exceed 30 characters) AND alos for children !!!!!
 
     const oldValue = _.clone(node.name);
 
@@ -331,8 +331,24 @@ export class TbTagComponent implements OnInit {
 
     this.stackObservables.push(this.tagService.updateTagName(node));
 
+    const rectifiedNewValue = `/${this.tagService.removeAccentAndUpperCase(newValue)}/`;
+    const rectifiedOldValue = `/${this.tagService.removeAccentAndUpperCase(oldValue)}/`;
+
+    // check children path size
+    const childrenTags = this.getChildren(node);
+    for (const child of childrenTags) {
+      if (child.path.replace(rectifiedOldValue, rectifiedNewValue).length > this.maxPathSize) {
+        // Abort
+        node.isSavingName = false;
+        node.name = oldValue;
+        this.stackObservables = [];
+        this.notify(`Impossible de renommer le tag '${oldValue}' (l'ensemble des tags imbriqués ne peut dépasser ${this.maxPathSize} caractères)`);
+        return;
+      }
+    }
+
     // REPLACE /OLDVALUE/ BY /NEWVALUE/ (slashes to avoid changes for near-named tag path)
-    this.parseChildNodesAndRenamePath(node, `/${this.tagService.removeAccentAndUpperCase(oldValue)}/`, `/${this.tagService.removeAccentAndUpperCase(newValue)}/`);
+    this.parseChildNodesAndRenamePath(node, rectifiedOldValue, rectifiedNewValue);
 
     if (this.stackObservables.length > 0) {
       const zipCall = zip(...this.stackObservables).subscribe(
@@ -357,7 +373,6 @@ export class TbTagComponent implements OnInit {
     if (node.children && node.children.length > 0) {
       for (const nodeChild of node.children) {
         const newPath = nodeChild.path.replace(oldValue, newValue);
-        // @Todo check path size : must not exceed 255 characters
         nodeChild.path = newPath;
         // push observable on the stack
         this.stackObservables.push(this.tagService.updateTagPath(nodeChild));
@@ -366,6 +381,21 @@ export class TbTagComponent implements OnInit {
         }
       }
     }
+  }
+
+  getChildren(tag: TbTag): Array<TbTag> {
+    const children: Array<TbTag> = [];
+    let subChildren: Array<TbTag> = [];
+    if (tag.children && tag.children.length > 0) {
+      for (const child of tag.children) {
+        children.push(child);
+        if (child.children && child.children.length > 0) {
+          subChildren = this.getChildren(child);
+          if (subChildren && subChildren.length > 0) { children.push(...subChildren); }
+        }
+      }
+    }
+    return children;
   }
 
   public cloneTags(tags: Array<TbTag>): Array<TbTag> {
@@ -484,36 +514,34 @@ export class TbTagComponent implements OnInit {
     this.renameNodePaths(event.node, event.to.parent);
 
     // check path length
-    if (event.node.path.length > 255) {
+    if (event.node.path.length > this.maxPathSize) {
       // set previous tags value
-      this.notify(`Impossible de déplacer le tag '${event.node.name}' à cet endroit (l'ensemble des tags imbriqués ne peut dépasser 255 caractères)`);
+      this.notify(`Impossible de déplacer le tag '${event.node.name}' à cet endroit (l'ensemble des tags imbriqués ne peut dépasser ${this.maxPathSize} caractères)`);
       if (this.userTagsAtDragStart) { this.userTagsObservable.next(this.userTagsAtDragStart); }
       this.userTagsAtDragStart = null;
-    } else {
-      // @Todo check nodes path length
-      // console.log(this.stackObservables);
-      // ...
-      if (this.stackObservables.length > 0) {
-        this.apiRenamingTagPath = true;
-        const zipCall = zip(...this.stackObservables).subscribe(
-          results => {
-            const updatedTags = this.assignTagsValues(uTags, results);
-            this.stackObservables = [];
-            // this.userTagsObservable.next(updatedTags);
-            // No need to rebuild tree, just update tags chips data
-            this.userTags = updatedTags;
-            this.userTagsAtDragStart = null;
-            this.apiRenamingTagPath = false;
-          }, error => {
-            this.stackObservables = [];
-            // notify user & reload entire tree
-            this.notify(`Nous ne parvenons pas à déplacer le tag '${event.node.name}'`);
-            this.userTagsObservable.next(this.userTagsAtDragStart);
-            this.userTagsAtDragStart = null;
-            this.apiRenamingTagPath = false;
-          }
-        );
-      }
+      return;
+    }
+
+    if (this.stackObservables.length > 0) {
+      this.apiRenamingTagPath = true;
+      const zipCall = zip(...this.stackObservables).subscribe(
+        results => {
+          const updatedTags = this.assignTagsValues(uTags, results);
+          this.stackObservables = [];
+          // this.userTagsObservable.next(updatedTags);
+          // No need to rebuild tree, just update tags chips data
+          this.userTags = updatedTags;
+          this.userTagsAtDragStart = null;
+          this.apiRenamingTagPath = false;
+        }, error => {
+          this.stackObservables = [];
+          // notify user & reload entire tree
+          this.notify(`Nous ne parvenons pas à déplacer le tag '${event.node.name}'`);
+          this.userTagsObservable.next(this.userTagsAtDragStart);
+          this.userTagsAtDragStart = null;
+          this.apiRenamingTagPath = false;
+        }
+      );
     }
   }
 
@@ -564,6 +592,15 @@ export class TbTagComponent implements OnInit {
     } else {
       const newPath = parent.path + this.tagService.removeAccentAndUpperCase(parent.name) + '/';
       // @Todo check path size : must not exceed 255 characters
+      if (newPath.length > this.maxPathSize) {
+        this.stackObservables = [];
+        // notify user & reload entire tree
+        this.notify(`Impossible de déplacer le tag (l'ensemble des tags imbriqués ne peut dépasser ${this.maxPathSize} caractères)`);
+        this.userTagsObservable.next(this.userTagsAtDragStart);
+        this.userTagsAtDragStart = null;
+        this.apiRenamingTagPath = false;
+        return;
+      }
       if (newPath !== node.path) {
         node.path = newPath;
         // push observable on the stack
