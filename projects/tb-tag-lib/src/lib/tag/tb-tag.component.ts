@@ -359,6 +359,16 @@ export class TbTagComponent implements OnInit {
    * @param newValue from the input
    */
   public renameTag(node: TbTag, newValue: string): void {
+
+    // check duplicates
+    for (const uTag of this.userTags) {
+      if (this.toLowerCaseWithoutAccent(uTag.name) === this.toLowerCaseWithoutAccent(newValue) && uTag.path === node.path) {
+        // notify and return
+        this.notify(`Un tag '${newValue}' existe déjà à cet endroit, veuillez utiliser un nom différent`);
+        return;
+      }
+    }
+
     this.stopEditingTagName(node);
 
     const oldValue = _.clone(node.name);
@@ -373,8 +383,8 @@ export class TbTagComponent implements OnInit {
 
     this.stackObservables.push(this.tagService.updateTagName(node));
 
-    const rectifiedNewValue = `/${this.tagService.removeAccentAndUpperCase(newValue)}/`;
-    const rectifiedOldValue = `/${this.tagService.removeAccentAndUpperCase(oldValue)}/`;
+    const rectifiedNewValue = `/${this.toLowerCaseWithoutAccent(newValue)}/`;
+    const rectifiedOldValue = `/${this.toLowerCaseWithoutAccent(oldValue)}/`;
 
     // check children path size
     const childrenTags = this.getChildren(node);
@@ -420,7 +430,8 @@ export class TbTagComponent implements OnInit {
    * @param value entered by the user
    */
   public createNewTag(value: string) {
-    if (this.findTagByNameAndPath(this.userTagsObservable.getValue(), value, '/') == null) {
+    // Check if the tag already exists at root
+    if (this.findTagByNameAndPath(this.userTagsObservable.getValue(), value, '/', true) == null) {
       this.isCreatingNewTag = false;
 
       const clonedUserTags = this.cloneTags(this.userTagsObservable.getValue());
@@ -460,6 +471,18 @@ export class TbTagComponent implements OnInit {
    */
  public  moveNode(event: {eventName: string, node: TbTag, to: {index: number, parent: any}, treeModel: TreeModel}) {
     const uTags = this.userTagsObservable.getValue();
+
+    // check duplicates
+    const destinationPath = event.to.parent.virtual ? '/' : event.to.parent.path + this.toLowerCaseWithoutAccent(event.to.parent.name) + '/';
+    for (const uTag of uTags) {
+      if (this.toLowerCaseWithoutAccent(uTag.name) === this.toLowerCaseWithoutAccent(event.node.name)
+          && this.toLowerCaseWithoutAccent(uTag.path) === this.toLowerCaseWithoutAccent(destinationPath)) {
+        this.notify(`Impossible de déplacer le tag '${event.node.name}' à cet endroit (un autre tag portant le même nom y existe déjà)`);
+        if (this.userTagsAtDragStart) { this.userTagsObservable.next(this.userTagsAtDragStart); }
+        this.userTagsAtDragStart = null;
+        return;
+      }
+    }
 
     this.renameNodePaths(event.node, event.to.parent);
 
@@ -540,7 +563,7 @@ export class TbTagComponent implements OnInit {
         }
       }
     } else {
-      const newPath = parent.path + this.tagService.removeAccentAndUpperCase(parent.name) + '/';
+      const newPath = parent.path + this.toLowerCaseWithoutAccent(parent.name) + '/';
       // @Todo check path size : must not exceed 255 characters
       if (newPath.length > this.maxPathSize) {
         this.stackObservables = [];
@@ -700,10 +723,14 @@ export class TbTagComponent implements OnInit {
   /**
    * Recursively parse an array of tags and get the tag with the given name/path values
    */
-  private findTagByNameAndPath(tags: Array<TbTag>, name: string, path: string): TbTag {
+  private findTagByNameAndPath(tags: Array<TbTag>, name: string, path: string, userLowerCaserAndIgnoreAccents?: boolean): TbTag {
     let result, subResult;
     tags.forEach(tag => {
-      if (tag.name.toLowerCase() === name.toLocaleLowerCase() && tag.path.toLowerCase() === path.toLowerCase()) {
+      const _name = userLowerCaserAndIgnoreAccents ? this.toLowerCaseWithoutAccent(name) : name.toLowerCase();
+      const _tagName = userLowerCaserAndIgnoreAccents ? this.toLowerCaseWithoutAccent(tag.name) : tag.name.toLowerCase();
+      const _path = userLowerCaserAndIgnoreAccents ? this.toLowerCaseWithoutAccent(path) : path.toLowerCase();
+      const _tagPath = userLowerCaserAndIgnoreAccents ? this.toLowerCaseWithoutAccent(tag.path) : tag.path.toLowerCase();
+      if (_tagName === _name && _tagPath === _path) {
         result = tag;
       } else if (tag.children) {
         subResult = this.findTagByNameAndPath(tag.children, name, path);
@@ -741,4 +768,7 @@ export class TbTagComponent implements OnInit {
     this.log.emit(logMessage);
   }
 
+  private toLowerCaseWithoutAccent(str: string): string {
+    return _.clone(str).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  }
 }
