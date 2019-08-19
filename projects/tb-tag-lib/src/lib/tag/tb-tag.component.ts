@@ -15,6 +15,7 @@ import { MatTreeFlattener, MatTreeFlatDataSource } from '@angular/material/tree'
 import { flatMap, map } from 'rxjs/operators';
 
 import { ITreeState, ITreeOptions, TreeComponent, TreeNode, TreeModel, TREE_ACTIONS } from 'angular-tree-component';
+import { MatSnackBar } from '@angular/material/snack-bar';
 
 
 @Component({
@@ -106,7 +107,8 @@ export class TbTagComponent implements OnInit {
 
   constructor(
     private tagService: TbTagService,
-    private fb: FormBuilder) { }
+    private fb: FormBuilder,
+    private _snackBar: MatSnackBar) { }
 
   static noSlash(control: FormControl) {
     return control.value.indexOf('/') === -1 ? null : { containsSlash: true };
@@ -174,8 +176,7 @@ export class TbTagComponent implements OnInit {
         this.isLoadingUsersTags = false;
       },
       error => {
-        // @Todo manage error
-        console.log(error);
+        this.notify(`Nous ne parvenons pas à charger vos tags personnalisés`);
         this.isLoadingUsersTags = false;
       }
     );
@@ -186,8 +187,7 @@ export class TbTagComponent implements OnInit {
   // ********
   getUserTags(): void {
     this.tagService.getUserTags(this.userId).subscribe(
-      uTags => this.userTagsObservable.next(uTags),
-      error => console.log(error)
+      uTags => this.userTagsObservable.next(uTags)
     );
   }
 
@@ -210,13 +210,13 @@ export class TbTagComponent implements OnInit {
           this.uTagSelectionChange(result); /* uncomment for the tag to be selected immediately after its creation */
           this.apiCreatingNewTag = false;
         }, error => {
-          // @Todo manage error
+          this.notify(`Nous ne parvenons pas à ajouter le tag '${bTag.name}' à votre liste`);
           bTag.loading = false;
           this.apiCreatingNewTag = false;
         }
       );
     } else {
-      console.log(`Le tag '${bTag.name}' est déjà présent dans vos tags. Vous ne pouvez pas l'ajouter un seconde fois`);
+      this.notify(`Le tag '${bTag.name}' est déjà présent dans vos tags. Vous ne pouvez pas l'ajouter à nouveau`);
     }
   }
 
@@ -248,6 +248,7 @@ export class TbTagComponent implements OnInit {
           clonedUTag.unlinking = false;
           this.userTagsObservable.next(clonedUserTags);
         }, error => {
+          this.notify(`Nous ne parvenons pas à supprimer le lien entre le tag '${node.name}' et le ou la ${this.objectName}`);
           node.unlinking = false;
           clonedUTag.unlinking = false;
         }
@@ -264,7 +265,7 @@ export class TbTagComponent implements OnInit {
           clonedUTag.linking = false;
           this.userTagsObservable.next(clonedUserTags);
         }, error => {
-          console.log(error);
+          this.notify(`Nous ne parvenons pas à lier le tag '${node.name}' et le ou la ${this.objectName}`);
           node.linking = false;
           clonedUTag.linking = false;
         }
@@ -343,7 +344,7 @@ export class TbTagComponent implements OnInit {
           this.userTags = updatedTags;
           node.isSavingName = false;
         }, error => {
-          // @Todo manage error
+          this.notify('Une erreur s\'est produite lors de l\'enregistrement de vos tags');
           this.stackObservables = [];
           node.isSavingName = false;
         }
@@ -433,12 +434,12 @@ export class TbTagComponent implements OnInit {
           // this.uTagSelectionChange(result); /* uncomment for the tag to be selected immediately after its creation */
           this.apiCreatingNewTag = false;
         }, error => {
-          // @Todo manage error
+          this.notify(`Nous ne parvenons pas à créer le tag '${value}'`);
           this.apiCreatingNewTag = false;
         }
       );
     } else {
-      console.log(`Le tag '${value}' est déjà présent dans vos tags. Vous ne pouvez pas l'ajouter un seconde fois`);
+      this.notify(`Le tag '${value}' est déjà présent dans vos tags. Vous ne pouvez pas l'ajouter un seconde fois`);
     }
   }
 
@@ -484,11 +485,13 @@ export class TbTagComponent implements OnInit {
     // check path length
     if (event.node.path.length > 255) {
       // set previous tags value
-      // @Todo notify user
-      console.log('ABORT DRAG AND DROP, PATH OVERSIZE');
+      this.notify(`Impossible de déplacer le tag '${event.node.name}' à cet endroit (l'ensemble des tags imbriqués ne peut dépasser 255 caractères)`);
       if (this.userTagsAtDragStart) { this.userTagsObservable.next(this.userTagsAtDragStart); }
       this.userTagsAtDragStart = null;
     } else {
+      // @Todo check nodes path length
+      // console.log(this.stackObservables);
+      // ...
       if (this.stackObservables.length > 0) {
         this.apiRenamingTagPath = true;
         const zipCall = zip(...this.stackObservables).subscribe(
@@ -502,9 +505,9 @@ export class TbTagComponent implements OnInit {
             this.apiRenamingTagPath = false;
           }, error => {
             this.stackObservables = [];
-            console.log(error);
+            // notify user & reload entire tree
+            this.notify(`Nous ne parvenons pas à déplacer le tag '${event.node.name}'`);
             this.userTagsObservable.next(this.userTagsAtDragStart);
-            // @Todo notify user & reload entire tree
             this.userTagsAtDragStart = null;
             this.apiRenamingTagPath = false;
           }
@@ -584,9 +587,9 @@ export class TbTagComponent implements OnInit {
         this.tagToBeDeletedRelatedObjects = results;
         this.apiLoadingRelatedObects = false;
       }, error => {
-        // @Todo manage error
+        this.notify(`Nous ne parvenons pas à supprimer le tag '${node.name}'`);
         this.apiLoadingRelatedObects = false;
-        console.log(error);
+        this.stopDeletingTag();
       }
     );
   }
@@ -599,7 +602,7 @@ export class TbTagComponent implements OnInit {
 
   deleteTag(tag: TbTag): void {
     if (tag.children && tag.children.length > 0) {
-      // @Todo notify user
+      this.notify('Vous ne pouvez pas supprimer un tag en contenant d\'autres');
       return;
     }
     const clonedUserTags = this.cloneTags(this.userTagsObservable.getValue());
@@ -612,13 +615,16 @@ export class TbTagComponent implements OnInit {
         this.userTagsObservable.next(clonedUserTags);
         this.apiDeletingTag = false;
         this.stopDeletingTag();
-        // @Todo notify user
       }, error => {
-        // @Todo manage error
-        console.log(error);
+        this.notify(`Nous ne parvenons pas à supprimer le tag '${tag.name}'`);
         this.apiDeletingTag = false;
+        this.stopDeletingTag();
       }
     );
+  }
+
+  notify(message: string): void {
+    this._snackBar.open(message, null, { duration: 5000 });
   }
 
 }
