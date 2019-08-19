@@ -7,7 +7,6 @@ import { MatInputModule, MatAutocompleteModule, MatProgressSpinnerModule, MatChi
          MatDialogModule, MatButtonModule, MatMenuModule, MatSnackBarModule, MatTooltipModule,
          MatCheckboxModule, MatFormFieldModule, MatTreeModule, MatListModule, MatCardModule } from '@angular/material';
 
-import { TbTagTreeComponent } from './tree/tb-tag-tree.component';
 import { TbTagComponent } from './tag/tb-tag.component';
 import { TreeModule } from 'angular-tree-component';
 
@@ -24,10 +23,7 @@ import { UnslashPipe } from './_pipes/unslash.pipe';
     MatButtonModule, MatMenuModule, MatSnackBarModule, MatCheckboxModule, MatFormFieldModule, MatTreeModule, MatListModule,
     MatCardModule, MatTooltipModule
   ],
-  entryComponents: [],
-  declarations: [TbTagTreeComponent, TbTagComponent, UnslashPipe],
-  exports: [TbTagTreeComponent, TbTagComponent]
+  declarations: [TbTagComponent, UnslashPipe],
+  exports: [TbTagComponent]
 })
-export class TbTagLibModule {
-  providers: [];
-}
+export class TbTagLibModule { }
