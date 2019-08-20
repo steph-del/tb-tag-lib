@@ -86,6 +86,7 @@ export class TbTagComponent implements OnInit {
   apiLoadingRelatedObects = false;
   apiDeletingTag = false;
   maxPathSize = 255;
+  linkingUnlinkingCount = 0;
 
   // form
   newTagInput: FormControl;
@@ -193,10 +194,8 @@ export class TbTagComponent implements OnInit {
         for (const uT of _uTags) {
           if (_.find(_oTags, oT => oT.id === uT.id)) { uT.selected = true; }
         }
-        if (_oTags.length > 0) {
-          this.tree = this.tagService.buildTree(_uTags);
-          this.userTagsObservable.next(_uTags);
-        }
+        this.tree = this.tagService.buildTree(_uTags);
+        this.userTagsObservable.next(_uTags);
         this.isLoadingUsersTags = false;
       },
       error => {
@@ -270,6 +269,7 @@ export class TbTagComponent implements OnInit {
    * @param node from the tree
    */
   public uTagSelectionChange(node: TbTag): void {
+    if (this.linkingUnlinkingCount > 0) { return; }
     const clonedUserTags = this.cloneTags(this.userTagsObservable.getValue());
     const clonedUTag = this.findTagById(clonedUserTags, node.id);
 
@@ -277,14 +277,17 @@ export class TbTagComponent implements OnInit {
       // unlink object
       node.unlinking = true;
       clonedUTag.unlinking = true;
+      this.linkingUnlinkingCount++;
       this.tagService.unlinkTagToObject(clonedUTag.id, this._objectId).subscribe(
         result => {
+          this.linkingUnlinkingCount--;
           clonedUTag.selected = false;
           node.unlinking = false;
           clonedUTag.unlinking = false;
           this.userTagsObservable.next(clonedUserTags);
         }, error => {
           this.notify(`Nous ne parvenons pas à supprimer le lien entre le tag '${node.name}' et le ou la ${this.objectName}`);
+          this.linkingUnlinkingCount--;
           node.unlinking = false;
           clonedUTag.unlinking = false;
         }
@@ -293,15 +296,18 @@ export class TbTagComponent implements OnInit {
       // link object
       node.linking = true;
       clonedUTag.linking = true;
+      this.linkingUnlinkingCount++;
       this.tagService.linkTagToObject(clonedUTag.id, this._objectId).subscribe(
         result => {
           // reload tree
+          this.linkingUnlinkingCount--;
           clonedUTag.selected = true;
           node.linking = false;
           clonedUTag.linking = false;
           this.userTagsObservable.next(clonedUserTags);
         }, error => {
           this.notify(`Nous ne parvenons pas à lier le tag '${node.name}' et le ou la ${this.objectName}`);
+          this.linkingUnlinkingCount--;
           node.linking = false;
           clonedUTag.linking = false;
         }
