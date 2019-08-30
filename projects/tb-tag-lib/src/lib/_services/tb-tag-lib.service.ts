@@ -127,6 +127,7 @@ export class TbTagService {
    * @param tags an array of TbTag objects
    */
   buildTree(_tags: Array<TbTag>): Array<TbTag> {
+    if (!_tags || _tags.length === 0) { return []; }
     const tags = _.cloneDeep(_tags);
 
     // Set tag depth
