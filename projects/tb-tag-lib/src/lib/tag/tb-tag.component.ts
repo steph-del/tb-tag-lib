@@ -50,7 +50,7 @@ export class TbTagComponent implements OnInit {
     this._objectId = data;
   }
   @Input() baseApiUrl = 'http://localhost:8000';
-  // ??? Input() noApiCall = false;
+  @Input() noApiCall = false;
   @Input() objectName = 'photo';
   @Input() objectEndpoint = '/api/photos';
   @Input() tagName = 'photoTag';
