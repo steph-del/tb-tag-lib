@@ -150,8 +150,8 @@
                   <div class="vertical-separator"></div>
                   <div><button type="button" mat-icon-button (click)="$event.preventDefault(); editTagName(node.data)" matTooltip="Modifier ce tag"><mat-icon>edit</mat-icon></button></div>
                   <div>
-                    <button type="button" mat-icon-button *ngIf="!node.isLeaf" disabled matTooltip="Vous ne pouvez pas supprimer un tag en contenant d'autres">
-                      <mat-icon>delete_outline</mat-icon>
+                    <button type="button" mat-icon-button *ngIf="!node.isLeaf" disabled>
+                      <mat-icon matTooltip="Vous ne pouvez pas supprimer un tag en contenant d'autres">delete_outline</mat-icon>
                     </button>
                     <button type="button" mat-icon-button *ngIf="node.isLeaf" (click)="$event.preventDefault(); startDeletingTag(node.data)" matTooltip="Supprimer ce tag">
                       <mat-icon>delete</mat-icon>
