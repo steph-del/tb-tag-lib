@@ -73,12 +73,12 @@
         </div>
         <div *ngIf="!apiLoadingRelatedObects && !apiDeletingTag">
           <div *ngIf="tagToBeDeletedRelatedObjects.length === 0">
-            <p>Ce tag n'est liée à aucun(e) {{ objectName }}.</p>
+            <p>Ce tag n'est lié à aucune {{ objectName }}.</p>
             <p>Sa suppression n'entrainera pas de conséquences sur le reste de vos données.</p>
           </div>
           <div *ngIf="tagToBeDeletedRelatedObjects.length === 1">
-            <p>Ce tag est lié à un ou une {{ objectName }}.</p>
-            <p>Si vous le supprimez, vous supprimez en même temps le lien vers ce ou cette {{ objectName }}.</p>
+            <p>Ce tag est lié à une {{ objectName }}.</p>
+            <p>Si vous le supprimez, vous supprimez en même temps le lien vers cette {{ objectName }}.</p>
           </div>
           <div *ngIf="tagToBeDeletedRelatedObjects.length > 1">
             <p>Ce tag est lié à <b>{{ tagToBeDeletedRelatedObjects.length }} {{ objectName }}s</b>.</p>
