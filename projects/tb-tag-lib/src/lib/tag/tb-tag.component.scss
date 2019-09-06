@@ -90,6 +90,12 @@ hr {
 }
 
 /* angular tree styles */
+.node-wrapper {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: center;
+}
 .node-content-wrapper {
   &:hover {
     background-color: #fcfaf5;
