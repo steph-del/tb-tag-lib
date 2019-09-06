@@ -53,8 +53,8 @@ Exemple d'utilisation :
 | ---                | ---                           | ---         |
 | log                | TbLogModel                    | revoie tous les évènements utiles pour l'utilisateur ou pour le déboguage |
 | httpError          | -                             | renvoie les erreurs Http le cas échéant |
-| newTag             | TbTagModel                    | évènement émis lors de la création d'un nouveau tag SI `noApiCall === true` ET `objectId === null` |
-| removedTag         | TbTagModel                    | évènement émis lors de la suppression d'un tag SI `noApiCall === true` ET `objectId === null` |
+| linkTag            | TbTagModel                    | évènement émis lors de la création d'un nouveau tag SI `noApiCall === true` ET `objectId === null` |
+| unlinkTag          | TbTagModel                    | évènement émis lors de la suppression d'un tag SI `noApiCall === true` ET `objectId === null` |
 
 
 TbLogModel :

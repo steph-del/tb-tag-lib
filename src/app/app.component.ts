@@ -31,4 +31,12 @@ export class AppComponent {
     { category: 'Morphologie' , name: 'Rosette', id: null, userId: null} ,
   ];
 
+  linkTag(tag: TbTag): void {
+    console.log('link tag: ', tag);
+  }
+
+  unlinkTag(tag: TbTag): void {
+    console.log('unlink tag: ', tag);
+  }
+
 }

@@ -64,8 +64,8 @@ export class TbTagComponent implements OnInit {
     this.tagService.setBasicTags(data);
   }
 
-  @Output() newTag = new EventEmitter<TbTag>();
-  @Output() removedTag = new EventEmitter<TbTag>();
+  @Output() linkTag = new EventEmitter<TbTag>();
+  @Output() unlinkTag = new EventEmitter<TbTag>();
   @Output() log = new EventEmitter<TbLog>();
   @Output() httpError = new EventEmitter<any>();
 
@@ -141,7 +141,7 @@ export class TbTagComponent implements OnInit {
    */
   ngOnInit() {
     // objectId provided ?
-    if (!this._objectId/* && !this.noApiCall*/) {
+    if (!this._objectId && !this.noApiCall) {
       this.log.emit({module: 'tb-tag-lib', type: 'error', message_fr: 'Vous devez fournir un objectId pour initialiser le module'});
     }
 
@@ -274,44 +274,66 @@ export class TbTagComponent implements OnInit {
     const clonedUTag = this.findTagById(clonedUserTags, node.id);
 
     if (clonedUTag.selected) {
-      // unlink object
+      // UNLINK object
       node.unlinking = true;
       clonedUTag.unlinking = true;
       this.linkingUnlinkingCount++;
-      this.tagService.unlinkTagToObject(clonedUTag.id, this._objectId).subscribe(
-        result => {
-          this.linkingUnlinkingCount--;
-          clonedUTag.selected = false;
-          node.unlinking = false;
-          clonedUTag.unlinking = false;
-          this.userTagsObservable.next(clonedUserTags);
-        }, error => {
-          this.notify(`Nous ne parvenons pas à supprimer le lien entre le tag '${node.name}' et le ou la ${this.objectName}`);
-          this.linkingUnlinkingCount--;
-          node.unlinking = false;
-          clonedUTag.unlinking = false;
-        }
-      );
+      if (this.noApiCall) {
+        // NO API call
+        clonedUTag.selected = false;
+        node.unlinking = false;
+        clonedUTag.unlinking = false;
+        this.linkingUnlinkingCount--;
+        this.userTagsObservable.next(clonedUserTags);
+        this.unlinkTag.next(clonedUTag);
+      } else {
+        // API call
+        this.tagService.unlinkTagToObject(clonedUTag.id, this._objectId).subscribe(
+          result => {
+            this.linkingUnlinkingCount--;
+            clonedUTag.selected = false;
+            node.unlinking = false;
+            clonedUTag.unlinking = false;
+            this.userTagsObservable.next(clonedUserTags);
+          }, error => {
+            this.notify(`Nous ne parvenons pas à supprimer le lien entre le tag '${node.name}' et le ou la ${this.objectName}`);
+            this.linkingUnlinkingCount--;
+            node.unlinking = false;
+            clonedUTag.unlinking = false;
+          }
+        );
+      }
     } else {
-      // link object
+      // LINK object
       node.linking = true;
       clonedUTag.linking = true;
       this.linkingUnlinkingCount++;
-      this.tagService.linkTagToObject(clonedUTag.id, this._objectId).subscribe(
-        result => {
-          // reload tree
-          this.linkingUnlinkingCount--;
-          clonedUTag.selected = true;
-          node.linking = false;
-          clonedUTag.linking = false;
-          this.userTagsObservable.next(clonedUserTags);
-        }, error => {
-          this.notify(`Nous ne parvenons pas à lier le tag '${node.name}' et le ou la ${this.objectName}`);
-          this.linkingUnlinkingCount--;
-          node.linking = false;
-          clonedUTag.linking = false;
-        }
-      );
+      if (this.noApiCall) {
+        // NO API call
+        clonedUTag.selected = true;
+        node.linking = false;
+        clonedUTag.linking = false;
+        this.linkingUnlinkingCount--;
+        this.userTagsObservable.next(clonedUserTags);
+        this.linkTag.next(clonedUTag);
+      } else {
+        // API call
+        this.tagService.linkTagToObject(clonedUTag.id, this._objectId).subscribe(
+          result => {
+            // reload tree
+            this.linkingUnlinkingCount--;
+            clonedUTag.selected = true;
+            node.linking = false;
+            clonedUTag.linking = false;
+            this.userTagsObservable.next(clonedUserTags);
+          }, error => {
+            this.notify(`Nous ne parvenons pas à lier le tag '${node.name}' et le ou la ${this.objectName}`);
+            this.linkingUnlinkingCount--;
+            node.linking = false;
+            clonedUTag.linking = false;
+          }
+        );
+      }
     }
   }
 

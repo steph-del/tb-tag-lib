@@ -1,5 +1,8 @@
 <tb-tag
+  [noApiCall]="true"
   [userId]="22"
   [objectId]="10"
   [basicTags]="basicTags"
+  (linkTag)="linkTag($event)"
+  (unlinkTag)="unlinkTag($event)"
 ></tb-tag>
