@@ -30,7 +30,7 @@
     <div class="category-title">Mes tags</div>
     <div class="userTags">
       <mat-chip-list class="chip-list">
-        <mat-chip *ngFor="let uTag of userTags"
+        <mat-chip *ngFor="let uTag of userTagsSelected()"
                   [color]="getTagColor(uTag)"
                   selected="true"
                   (click)="uTagSelectionChange(uTag)">

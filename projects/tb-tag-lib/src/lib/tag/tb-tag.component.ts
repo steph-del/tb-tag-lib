@@ -337,6 +337,10 @@ export class TbTagComponent implements OnInit {
     }
   }
 
+  public userTagsSelected(): Array<TbTag> {
+    return _.filter(this.userTags, ut => ut.selected);
+  }
+
   // *************
   // TAG NAME EDIT
   // *************
