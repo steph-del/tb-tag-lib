@@ -148,11 +148,12 @@ export class TbTagService {
     for (let index = 1; index < Object.keys(tagsGroupedByLength).length; index++) {
       for (const tag of tagsGroupedByLength[index]) {
         const arrayPaths = tag.path.split('/').filter(p => p !== '');
-        let parentTag;
+        let parentTag: TbTag;
         try {
           parentTag = _.find(tagsGroupedByLength[index - 1], t => this.removeAccentAndUpperCase(t.name) === arrayPaths[index - 1]);
           !parentTag.children || parentTag.children.length === 0 ? parentTag.children = [tag] : parentTag.children.push(tag);
         } catch (e) {
+          console.error(`Impossible de touver le tag parent pour le tag suivant : id: '${tag.id}', name: '${tag.name}', path: '${tag.path}'`);
           console.log(e);
         }
       }
