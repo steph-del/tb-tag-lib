@@ -23,7 +23,8 @@
               "src/assets"
             ],
             "styles": [
-              "src/styles.scss"
+              "src/styles.scss",
+              "node_modules/angular-tree-component/dist/angular-tree-component.css"
             ],
             "scripts": []
           },
