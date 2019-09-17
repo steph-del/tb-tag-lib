@@ -516,7 +516,7 @@ export class TbTagComponent implements OnInit, OnChanges {
     const uTags = this.userTagsObservable.getValue();
 
     // check duplicates
-    const destinationPath = event.to.parent.virtual ? '/' : event.to.parent.path + this.toLowerCaseWithoutAccent(event.to.parent.name) + '/';
+    const destinationPath = event.to.parent.virtual ? '/' : event.to.parent.path + this.toLowerCaseWithoutAccent(event.to.parent.name);
     for (const uTag of uTags) {
       if (this.toLowerCaseWithoutAccent(uTag.name) === this.toLowerCaseWithoutAccent(event.node.name)
           && this.toLowerCaseWithoutAccent(uTag.path) === this.toLowerCaseWithoutAccent(destinationPath)) {
@@ -606,7 +606,7 @@ export class TbTagComponent implements OnInit, OnChanges {
         }
       }
     } else {
-      const newPath = parent.path + this.toLowerCaseWithoutAccent(parent.name) + '/';
+      const newPath = parent.path === '/' ? parent.path + this.toLowerCaseWithoutAccent(parent.name) : parent.path + '/' + this.toLowerCaseWithoutAccent(parent.name) ;
       // @Todo check path size : must not exceed 255 characters
       if (newPath.length > this.maxPathSize) {
         this.stackObservables = [];
