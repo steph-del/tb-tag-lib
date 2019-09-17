@@ -39,4 +39,8 @@ export class AppComponent {
     console.log('unlink tag: ', tag);
   }
 
+  increaseObjId() {
+    this.tagObjectId++;
+  }
+
 }

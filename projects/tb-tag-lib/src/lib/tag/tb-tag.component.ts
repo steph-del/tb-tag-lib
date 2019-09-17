@@ -1,4 +1,4 @@
-import { Component, OnInit, Input, Output, EventEmitter, ViewChild } from '@angular/core';
+import { Component, OnInit, OnChanges, Input, Output, EventEmitter, ViewChild, SimpleChanges } from '@angular/core';
 import { FormBuilder, FormControl } from '@angular/forms';
 
 import { Observable, BehaviorSubject, VirtualAction, zip } from 'rxjs';
@@ -39,7 +39,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
   templateUrl: './tb-tag.component.html',
   styleUrls: ['./tb-tag.component.scss']
 })
-export class TbTagComponent implements OnInit {
+export class TbTagComponent implements OnInit, OnChanges {
   @ViewChild('treeComponent') private treeComponent: TreeComponent;
 
   //
@@ -180,6 +180,19 @@ export class TbTagComponent implements OnInit {
     );
 
     // Start by getting both user tags and related object tags
+    this.tagInit();
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes.objectId && changes.objectId.firstChange === false) {
+      this.tagInit();
+    }
+  }
+
+  /**
+   * Get both user tags and related object tags
+   */
+  tagInit(): void {
     let _uTags: Array<TbTag>; // user tags
     let _oTags: any;          // object related tags
     this.isLoadingUsersTags = true;

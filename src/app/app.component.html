@@ -1,8 +1,10 @@
 <tb-tag
-  [noApiCall]="true"
+  [noApiCall]="false"
   [userId]="22"
-  [objectId]="10"
+  [objectId]="tagObjectId"
   [basicTags]="basicTags"
   (linkTag)="linkTag($event)"
   (unlinkTag)="unlinkTag($event)"
 ></tb-tag>
+
+<button mat-button (click)="increaseObjId()">Object id +1</button>
