@@ -153,7 +153,7 @@ export class TbTagService {
           parentTag = _.find(tagsGroupedByLength[index - 1], t => this.removeAccentAndUpperCase(t.name) === arrayPaths[index - 1]);
           !parentTag.children || parentTag.children.length === 0 ? parentTag.children = [tag] : parentTag.children.push(tag);
         } catch (e) {
-          console.error(`Impossible de touver le tag parent pour le tag suivant : id: '${tag.id}', name: '${tag.name}', path: '${tag.path}'`);
+          console.log(`Erreur lors de la construction de l'arborescence des tags. Impossible de touver le tag parent pour le tag suivant : id: '${tag.id}', name: '${tag.name}', path: '${tag.path}'`);
           console.log(e);
         }
       }
