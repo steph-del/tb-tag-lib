@@ -1,7 +1,7 @@
 import { Component, OnInit, OnChanges, Input, Output, EventEmitter, ViewChild, SimpleChanges } from '@angular/core';
 import { FormBuilder, FormControl } from '@angular/forms';
 
-import { Observable, BehaviorSubject, VirtualAction, zip } from 'rxjs';
+import { Observable, BehaviorSubject, VirtualAction, zip, of } from 'rxjs';
 
 import { TbLog } from '../_models/tb-log.model';
 import { TbTag } from '../_models/tbtag.model';
@@ -199,7 +199,7 @@ export class TbTagComponent implements OnInit, OnChanges {
     this.tagService.getUserTags(this.userId).pipe(
       flatMap(uTags => {
         _uTags = uTags;
-        return this.tagService.getObjectRelations(this._objectId);
+        return this.noApiCall ? of([]) : this.tagService.getObjectRelations(this._objectId);
       })
     ).subscribe(
       oTags => {
@@ -316,7 +316,7 @@ export class TbTagComponent implements OnInit, OnChanges {
             clonedUTag.unlinking = false;
             this.userTagsObservable.next(clonedUserTags);
           }, error => {
-            this.notify(`Nous ne parvenons pas à supprimer le lien entre le tag '${node.name}' et le ou la ${this.objectName}`);
+            this.notify(`Nous ne parvenons pas à supprimer le lien entre le tag '${node.name}' et votre ${this.objectName}`);
             this.linkingUnlinkingCount--;
             node.unlinking = false;
             clonedUTag.unlinking = false;
@@ -347,7 +347,7 @@ export class TbTagComponent implements OnInit, OnChanges {
             clonedUTag.linking = false;
             this.userTagsObservable.next(clonedUserTags);
           }, error => {
-            this.notify(`Nous ne parvenons pas à lier le tag '${node.name}' et le ou la ${this.objectName}`);
+            this.notify(`Nous ne parvenons pas à lier le tag '${node.name}' et votre ${this.objectName}`);
             this.linkingUnlinkingCount--;
             node.linking = false;
             clonedUTag.linking = false;

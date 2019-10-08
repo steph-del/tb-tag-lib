@@ -1,11 +1,11 @@
-<tb-tag
+<!--<tb-tag
   [noApiCall]="false"
   [userId]="22"
   [objectId]="tagObjectId"
   [basicTags]="basicTags"
   (linkTag)="linkTag($event)"
   (unlinkTag)="unlinkTag($event)"
-></tb-tag>
+></tb-tag>-->
 
 <tb-tag
     [userId]=22
@@ -15,7 +15,7 @@
     (removedTag)="unlinkTag($event)"
     (httpError)="httpError($event)"
     apiPath="/api/user_occurrence_tags"
-    apiTagsRelationsPath="/api/occurrence_user_occurrence_tag_relations"
+    apiTagsRelationsPath="/api/user_occurrence_tags/{id}/occurrence_relations"
     apiRelationPath="/api/occurrence_user_occurrence_tag_relations"
     apiRetrievePath="/api/occurrences/{id}/user_tag_relations"
     objectName="occurrence"
