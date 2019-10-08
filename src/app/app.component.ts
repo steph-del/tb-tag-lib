@@ -10,7 +10,7 @@ import { TbLog } from 'projects/tb-tag-lib/src/lib/_models/tb-log.model';
 })
 export class AppComponent {
 
-  tagObjectId = 10;
+  tagObjectId = 2232;
   enabled = true;
 
   public basicTags = [
@@ -41,6 +41,10 @@ export class AppComponent {
 
   increaseObjId() {
     this.tagObjectId++;
+  }
+
+  httpError(error) {
+    console.log(error);
   }
 
 }

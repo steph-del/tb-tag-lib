@@ -203,7 +203,14 @@ export class TbTagComponent implements OnInit, OnChanges {
       })
     ).subscribe(
       oTags => {
-        _oTags = oTags && oTags.length > 0 ? _.map(oTags, o => o[`${this.objectName}Tag`]) : [];
+        _oTags = oTags && oTags.length > 0 ? _.map(oTags, o => o[`${this.tagName}`]) : [];
+        const uniqOtags = _.uniq(_oTags);
+        if (uniqOtags.length > 0 && uniqOtags[0] === undefined) {
+          console.error(`La propriété '${this.tagName}' n'existe pas sur l'objet '${this.objectName}' ; Vérifiez le paramètre 'tagName' du module tb-tag-lib`);
+          this.notify(`Une erreur est survenue, nous ne pouvons pas charger correctement vos tags`);
+          this.isLoadingUsersTags = false;
+          return;
+        }
         for (const uT of _uTags) {
           if (_.find(_oTags, oT => oT.id === uT.id)) { uT.selected = true; }
         }

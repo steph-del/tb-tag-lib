@@ -7,4 +7,21 @@
   (unlinkTag)="unlinkTag($event)"
 ></tb-tag>
 
+<tb-tag
+    [userId]=22
+    [objectId]="tagObjectId"
+    [noApiCall]="false"
+    (newTag)="linkTag($event)"
+    (removedTag)="unlinkTag($event)"
+    (httpError)="httpError($event)"
+    apiPath="/api/user_occurrence_tags"
+    apiTagsRelationsPath="/api/occurrence_user_occurrence_tag_relations"
+    apiRelationPath="/api/occurrence_user_occurrence_tag_relations"
+    apiRetrievePath="/api/occurrences/{id}/user_tag_relations"
+    objectName="occurrence"
+    objectEndpoint="/api/occurrences"
+    tagName="userOccurrenceTag"
+    tagEndpoint="/api/user_occurrence_tags"></tb-tag>
+
+
 <button mat-button (click)="increaseObjId()">Object id +1</button>
